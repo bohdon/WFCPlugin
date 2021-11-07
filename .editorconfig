@@ -1,0 +1,5 @@
+
+[*.{h,cpp}]
+# ue4 can be verbose and long-winded, this extra buffer (default is 120)
+# prevents a lot of unnecessary line wraps and improves readability
+max_line_length=140
