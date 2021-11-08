@@ -43,6 +43,9 @@ public:
 	/** Return the direction that goes the opposite way of a direction. */
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const { return INDEX_NONE; }
 
+	/** Return a rotated direction. */
+	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
+
 	/** Return the index of the cell that is one unit in a direction from another cell. */
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const { return INDEX_NONE; }
 };
@@ -66,6 +69,7 @@ public:
 	FORCEINLINE virtual int32 GetNumCells() const override { return GridDimensions.X * GridDimensions.Y; }
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
+	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
 
 	/** Return the cell index for a grid location */
@@ -84,9 +88,9 @@ public:
 		case 0:
 			return FIntPoint(1, 0);
 		case 1:
-			return FIntPoint(-1, 0);
-		case 2:
 			return FIntPoint(0, 1);
+		case 2:
+			return FIntPoint(-1, 0);
 		case 3:
 			return FIntPoint(0, -1);
 		default:

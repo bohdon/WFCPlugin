@@ -94,6 +94,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTiles(TArray<FWFCTile>& OutTiles) const;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /* CellIndex */);
+
+	FCellSelectedDelegate OnCellSelected;
+
 protected:
 	/** The grid being used */
 	UPROPERTY(Transient)

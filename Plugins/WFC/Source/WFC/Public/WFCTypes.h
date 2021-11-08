@@ -78,17 +78,23 @@ struct FWFCTile
 	GENERATED_BODY()
 
 	FWFCTile()
+		: Rotation(0)
 	{
 	}
 
-	FWFCTile(UObject* InObject)
-		: Object(InObject)
+	FWFCTile(UObject* InObject, int32 InRotation = 0)
+		: Object(InObject),
+		  Rotation(InRotation)
 	{
 	}
 
 	/** The object this tile represents. Could be an actor, texture, or other object */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TWeakObjectPtr<UObject> Object;
+
+	/** The rotation of this tile relative to its definition. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Rotation;
 };
 
 

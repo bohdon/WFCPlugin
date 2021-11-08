@@ -36,6 +36,8 @@ void UWFCGenerator::Initialize(const UWFCGrid* InGrid, const UWFCModel* InModel)
 			Cells[Idx].TileCandidates = AllTileCandidates;
 		}
 
+		State = EWFCGeneratorState::InProgress;
+
 		bIsInitialized = true;
 	}
 }
@@ -166,6 +168,11 @@ const FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex Index) const
 
 void UWFCGenerator::OnCellChanged(FWFCCellIndex Index)
 {
+	if (GetCell(Index).HasSelection())
+	{
+		OnCellSelected.Broadcast(Index);
+	}
+
 	// TODO: move this to adjacent constraint
 	MarkCellForAdjacencyCheck(Index);
 }

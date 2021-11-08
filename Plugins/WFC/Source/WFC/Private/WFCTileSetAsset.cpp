@@ -8,13 +8,15 @@
 
 void UWFCTileSetAsset::GetTiles(TArray<FWFCTile>& OutTiles)
 {
-	// TODO: support large size tiles and setup appropriate adjacency rules
-
-	OutTiles.SetNum(TileAssets.Num());
+	// add each tile for each 90 degree rotation
+	OutTiles.SetNum(TileAssets.Num() * 4);
 	int32 Idx = 0;
 	for (const TObjectPtr<UWFCTileAsset>& TileAsset : TileAssets)
 	{
-		OutTiles[Idx] = FWFCTile(TileAsset.Get());
-		++Idx;
+		for (int32 Rotation = 0; Rotation < 4; ++Rotation)
+		{
+			OutTiles[Idx] = FWFCTile(TileAsset.Get(), Rotation);
+			++Idx;
+		}
 	}
 }

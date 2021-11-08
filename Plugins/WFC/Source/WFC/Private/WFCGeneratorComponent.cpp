@@ -50,6 +50,8 @@ void UWFCGeneratorComponent::InitializeGenerator()
 	}
 
 	Generator = NewObject<UWFCGenerator>(this, WFCAsset->GeneratorClass);
+	Generator->OnCellSelected.AddUObject(this, &UWFCGeneratorComponent::OnCellSelected);
+
 	Model = NewObject<UWFCModel>(this);
 	WFCAsset->TileSet->GetTiles(Model->Tiles);
 
@@ -92,6 +94,7 @@ void UWFCGeneratorComponent::AddAdjacencyMappings()
 	{
 		return;
 	}
+	const UWFCGrid* Grid = WFCAsset->Grid;
 
 	// TODO: don't check adjacency for B -> A if A -> B has already been checked, change AddAdjacentTileMapping to include both
 
@@ -109,14 +112,16 @@ void UWFCGeneratorComponent::AddAdjacencyMappings()
 			if (Tile2dA && Tile2dB)
 			{
 				// for each direction, and check if socket type matches opposite direction on the other tile
-				for (FWFCGridDirection Direction = 0; Direction < WFCAsset->Grid->GetNumDirections(); ++Direction)
+				for (FWFCGridDirection Direction = 0; Direction < Grid->GetNumDirections(); ++Direction)
 				{
 					// adjacency mappings represent 'incoming' directions,
 					// so the adjacency mappings for A here represent the direction B -> A
-					const EWFCTile2dEdge EdgeA = static_cast<EWFCTile2dEdge>(WFCAsset->Grid->GetOppositeDirection(Direction));
-					const EWFCTile2dEdge EdgeB = static_cast<EWFCTile2dEdge>(Direction);
-					const int32 SocketTypeA = Tile2dA->EdgeSocketTypes[EdgeA];
-					const int32 SocketTypeB = Tile2dB->EdgeSocketTypes[EdgeB];
+					const int32 AInvRotation = (4 - TileA.Rotation) % 4;
+					const int32 BInvRotation = (4 - TileB.Rotation) % 4;
+					FWFCGridDirection AEdgeDirection = Grid->GetRotatedDirection(Grid->GetOppositeDirection(Direction), AInvRotation);
+					FWFCGridDirection BEdgeDirection = Grid->GetRotatedDirection(Direction, BInvRotation);
+					const int32 SocketTypeA = Tile2dA->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(AEdgeDirection)];
+					const int32 SocketTypeB = Tile2dB->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(BEdgeDirection)];
 
 					if (SocketTypeA == SocketTypeB)
 					{
@@ -126,4 +131,9 @@ void UWFCGeneratorComponent::AddAdjacencyMappings()
 			}
 		}
 	}
+}
+
+void UWFCGeneratorComponent::OnCellSelected(int32 CellIndex)
+{
+	OnCellSelectedEvent_BP.Broadcast(CellIndex);
 }

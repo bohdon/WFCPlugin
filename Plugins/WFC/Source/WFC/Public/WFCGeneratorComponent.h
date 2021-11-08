@@ -54,6 +54,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTiles(TArray<FWFCTile>& OutTiles) const;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCellSelectedDynDelegate, int32, CellIndex);
+
+	UPROPERTY(BlueprintAssignable)
+	FCellSelectedDynDelegate OnCellSelectedEvent_BP;
+
 protected:
 	/** The generator instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -64,4 +69,6 @@ protected:
 	UWFCModel* Model;
 
 	void AddAdjacencyMappings();
+
+	void OnCellSelected(int32 CellIndex);
 };

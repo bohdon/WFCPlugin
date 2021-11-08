@@ -24,8 +24,8 @@ UENUM(BlueprintType)
 enum class EWFCTile2dEdge : uint8
 {
 	XPos UMETA(DisplayName = "+X"),
-	XNeg UMETA(DisplayName = "-X"),
 	YPos UMETA(DisplayName = "+Y"),
+	XNeg UMETA(DisplayName = "-X"),
 	YNeg UMETA(DisplayName = "-Y"),
 };
 
