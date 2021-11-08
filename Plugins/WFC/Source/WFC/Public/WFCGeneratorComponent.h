@@ -62,4 +62,6 @@ protected:
 	/** The model instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
 	UWFCModel* Model;
+
+	void AddAdjacencyMappings();
 };

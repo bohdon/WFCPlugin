@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WFCTypes.h"
 #include "UObject/Object.h"
 #include "WFCGrid.generated.h"
 
@@ -21,15 +22,29 @@ class WFC_API UWFCGrid : public UObject
 public:
 	UWFCGrid();
 
-	/**
-	 * All possible directions to consider for navigating between cells in this grid.
-	 * Ex. Up, Down, Left and Right for a 2d grid.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TArray<TObjectPtr<UWFCDirection>> Directions;
-
 	/** Return the total number of cells in this grid */
 	virtual int32 GetNumCells() const { return 0; }
+
+	/** Return true if a cell index is valid */
+	FORCEINLINE bool IsValidCellIndex(FWFCCellIndex CellIndex) const
+	{
+		return CellIndex >= 0 && CellIndex < GetNumCells();
+	}
+
+	/** Return the number of possible directions, and therefore also neighbors, for a cell in the grid. */
+	virtual int32 GetNumDirections() const { return 0; }
+
+	/** Return true if a direction is valid for a cell */
+	FORCEINLINE bool IsValidDirection(FWFCGridDirection Direction) const
+	{
+		return Direction >= 0 && Direction < GetNumDirections();
+	}
+
+	/** Return the direction that goes the opposite way of a direction. */
+	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const { return INDEX_NONE; }
+
+	/** Return the index of the cell that is one unit in a direction from another cell. */
+	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const { return INDEX_NONE; }
 };
 
 
@@ -48,9 +63,34 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntPoint GridDimensions;
 
-	virtual int32 GetNumCells() const override;
+	FORCEINLINE virtual int32 GetNumCells() const override { return GridDimensions.X * GridDimensions.Y; }
+	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
+	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
+	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
+
+	/** Return the cell index for a grid location */
+	UFUNCTION(BlueprintPure)
+	int32 GetCellIndexForLocation(FIntPoint GridLocation) const;
 
 	/** Return the grid location for a cell */
 	UFUNCTION(BlueprintPure)
-	FIntPoint GetCellLocation(int32 CellIndex) const;
+	FIntPoint GetLocationForCellIndex(int32 CellIndex) const;
+
+	/** Return the 2d vector for a direction */
+	static FIntPoint GetDirectionVector(FWFCGridDirection Direction)
+	{
+		switch (Direction)
+		{
+		case 0:
+			return FIntPoint(1, 0);
+		case 1:
+			return FIntPoint(-1, 0);
+		case 2:
+			return FIntPoint(0, 1);
+		case 3:
+			return FIntPoint(0, -1);
+		default:
+			return FIntPoint();
+		}
+	}
 };

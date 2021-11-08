@@ -6,6 +6,9 @@
 #include "WFCTypes.generated.h"
 
 
+/** Represents a direction pointing from one cell in a grid to another. */
+typedef int32 FWFCGridDirection;
+
 /** Represents the id of a cell within a grid. */
 typedef int32 FWFCCellIndex;
 
@@ -42,6 +45,8 @@ struct FWFCCell
 	/** The array of tile candidates for this cell. */
 	TArray<FWFCTileId> TileCandidates;
 
+	// TODO: consider moving these to reduce memory footprint
+
 	FORCEINLINE bool HasNoCandidates() const { return TileCandidates.Num() == 0; }
 
 	/** Return true if this cell has one valid tile selected for it */
@@ -49,11 +54,17 @@ struct FWFCCell
 
 	FORCEINLINE bool HasSelectionOrNoCandidates() const { return TileCandidates.Num() <= 1; }
 
-	void AddCandidate(FWFCTileId TileId);
-	void RemoveCandidate(FWFCTileId TileId);
+	/** @return True if the candidates were changed */
+	bool AddCandidate(FWFCTileId TileId);
+
+	/** @return True if the candidates were changed */
+	bool RemoveCandidate(FWFCTileId TileId);
 
 	/** Return the selected tile id, or INDEX_NONE if not selected */
 	FORCEINLINE FWFCTileId GetSelectedTileId() const { return TileCandidates.Num() == 1 ? TileCandidates[0] : INDEX_NONE; }
+
+	/** Return true if any of the tile ids are a candidate for a cell. */
+	bool HasAnyMatchingCandidate(const TArray<FWFCTileId>& TileIds) const;
 };
 
 

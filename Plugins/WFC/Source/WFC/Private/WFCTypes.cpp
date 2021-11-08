@@ -4,15 +4,30 @@
 #include "WFCTypes.h"
 
 
-void FWFCCell::AddCandidate(FWFCTileId TileId)
+bool FWFCCell::AddCandidate(FWFCTileId TileId)
 {
-	TileCandidates.AddUnique(TileId);
+	if (!TileCandidates.Contains(TileId))
+	{
+		TileCandidates.Add(TileId);
+		return true;
+	}
+	return false;
 }
 
-void FWFCCell::RemoveCandidate(FWFCTileId TileId)
+bool FWFCCell::RemoveCandidate(FWFCTileId TileId)
 {
 	if (TileCandidates.Contains(TileId))
 	{
 		TileCandidates.Remove(TileId);
+		return true;
 	}
+	return false;
+}
+
+bool FWFCCell::HasAnyMatchingCandidate(const TArray<FWFCTileId>& TileIds) const
+{
+	return TileIds.ContainsByPredicate([this](const FWFCTileId& TileId)
+	{
+		return TileCandidates.Contains(TileId);
+	});
 }

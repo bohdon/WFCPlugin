@@ -21,6 +21,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FWFCTile> Tiles;
 
+	FORCEINLINE virtual int32 GetNumTiles() const { return Tiles.Num(); }
+
 	/** Get a tile by id */
 	FORCEINLINE FWFCTile GetTile(FWFCTileId TileId) const { return Tiles.IsValidIndex(TileId) ? Tiles[TileId] : FWFCTile(); }
 };
