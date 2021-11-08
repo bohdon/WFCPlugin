@@ -31,8 +31,8 @@ enum class EWFCTile2dEdge : uint8
 
 
 /**
- * A 2d tile with a unique shape on each side for use with the adjacent model.
- * References a blueprint to be spawned for each tile.
+ * A 2d tile with a socket type on each side for use with adjacency constraints.
+ * References an actor to be spawned for each tile.
  */
 UCLASS()
 class WFC_API UWFCTile2dAsset : public UWFCTileAsset
@@ -46,7 +46,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AActor> ActorClass;
 
-	/** The patterns for all edges of the tile */
+	/** The socket types for all edges of the tile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<EWFCTile2dEdge, int32> EdgePatterns;
+	TMap<EWFCTile2dEdge, int32> EdgeSocketTypes;
 };

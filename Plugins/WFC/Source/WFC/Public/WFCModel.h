@@ -9,35 +9,18 @@
 
 
 /**
- * A model which defines the rules for how tiles should be constrained.
- * @ee UWFCAdjacentModel for a more concrete example.
+ * A model which contains all possible tiles and tile set info.
  */
-UCLASS(Abstract, BlueprintType, Blueprintable, DefaultToInstanced, EditInlineNew)
+UCLASS(BlueprintType)
 class WFC_API UWFCModel : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	/** Array of all available tiles for use in this model */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TArray<FWFCTile> AvailableTiles;
-};
+	/** All available tiles in the model */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FWFCTile> Tiles;
 
-
-/**
- * A model which requires adjacent tiles to have matching patterns.
- * Ex.
- *	- A 2d tile set has two patterns: grass or dirt.
- *	- Each tile defines a pattern for all 4 sides of the tile
- *	- Tiles can only be placed next to each other if their pattern matches (e.g. grass to grass or dirt to dirt)
- */
-UCLASS()
-class WFC_API UWFCAdjacentModel : public UWFCModel
-{
-	GENERATED_BODY()
-
-public:
-	/** All possible directions to consider for the tiles, e.g. up down left and right for a 2d tile set */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, meta = (ShowOnlyInnerProperties))
-	TArray<TObjectPtr<UWFCDirection>> Directions;
+	/** Get a tile by id */
+	FORCEINLINE FWFCTile GetTile(FWFCTileId TileId) const { return Tiles.IsValidIndex(TileId) ? Tiles[TileId] : FWFCTile(); }
 };

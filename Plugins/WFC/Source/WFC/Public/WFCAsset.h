@@ -6,8 +6,10 @@
 #include "Engine/DataAsset.h"
 #include "WFCAsset.generated.h"
 
+class UWFCGenerator;
+class UWFCGrid;
 class UWFCModel;
-class UWFCTileAssetSet;
+class UWFCTileSetAsset;
 
 
 /**
@@ -19,11 +21,17 @@ class WFC_API UWFCAsset : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	/** The WFC model to use. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TObjectPtr<UWFCModel> Model;
+	UWFCAsset();
 
-	/** The tile asset set to use as the available tiles. */
+	/** The generator class to use, which controls the rules of how each cell is selected. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, NoClear)
+	TSubclassOf<UWFCGenerator> GeneratorClass;
+
+	/** The tile set to use, which contains all available tiles as well as relevant data specific to the set. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UWFCTileAssetSet> TileSet;
+	TObjectPtr<UWFCTileSetAsset> TileSet;
+
+	/** The grid to populate. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TObjectPtr<UWFCGrid> Grid;
 };
