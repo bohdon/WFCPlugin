@@ -1,7 +1,7 @@
 ﻿// Copyright Bohdon Sayre. All Rights Reserved.
 
 
-#include "WFCTileSet2DGenerator.h"
+#include "WFCTileSet3DGenerator.h"
 
 #include "WFCTileAsset.h"
 #include "WFCTileSet.h"
@@ -11,13 +11,24 @@
 #include "Core/Constraints/WFCAdjacencyConstraint.h"
 
 
-UWFCTileSet2DGenerator::UWFCTileSet2DGenerator()
+UWFCTileSet3DGenerator::UWFCTileSet3DGenerator()
+	: bAllowYawRotation(true),
+	  bAllowPitchRotation(false),
+	  bAllowRollRotation(false)
 {
 }
 
-void UWFCTileSet2DGenerator::GenerateTiles_Implementation(const UWFCTileSet* TileSet, TArray<FWFCTile>& OutTiles) const
+
+void UWFCTileSet3DGenerator::GenerateTiles_Implementation(const UWFCTileSet* TileSet, TArray<FWFCTile>& OutTiles) const
 {
-	// add each tile for each 90 degree rotation
+	if (!bAllowYawRotation)
+	{
+		Super::GenerateTiles_Implementation(TileSet, OutTiles);
+		return;
+	}
+
+	// add each tile for each 90 degree yaw rotation
+	// TODO: support pitch and roll rotations
 	constexpr int32 NumRotations = 4;
 
 	OutTiles.SetNum(TileSet->TileAssets.Num() * NumRotations);
@@ -32,7 +43,7 @@ void UWFCTileSet2DGenerator::GenerateTiles_Implementation(const UWFCTileSet* Til
 	}
 }
 
-void UWFCTileSet2DGenerator::ConfigureGeneratorForTiles_Implementation(const UWFCTileSet* TileSet, const UWFCModel* Model,
+void UWFCTileSet3DGenerator::ConfigureGeneratorForTiles_Implementation(const UWFCTileSet* TileSet, const UWFCModel* Model,
                                                                        UWFCGenerator* Generator) const
 {
 	if (UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>())
@@ -41,7 +52,7 @@ void UWFCTileSet2DGenerator::ConfigureGeneratorForTiles_Implementation(const UWF
 	}
 }
 
-void UWFCTileSet2DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model, const UWFCGenerator* Generator,
+void UWFCTileSet3DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model, const UWFCGenerator* Generator,
                                                           UWFCAdjacencyConstraint* AdjacencyConstraint) const
 {
 	const UWFCGrid* Grid = Generator->GetGrid();
@@ -71,8 +82,8 @@ void UWFCTileSet2DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 					const int32 BInvRotation = (4 - TileB.Rotation) % 4;
 					FWFCGridDirection AEdgeDirection = Grid->GetRotatedDirection(Grid->GetOppositeDirection(Direction), AInvRotation);
 					FWFCGridDirection BEdgeDirection = Grid->GetRotatedDirection(Direction, BInvRotation);
-					const int32 SocketTypeA = Tile2dA->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(AEdgeDirection)];
-					const int32 SocketTypeB = Tile2dB->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(BEdgeDirection)];
+					const int32 SocketTypeA = Tile2dA->EdgeSocketTypes.FindRef(static_cast<EWFCTile2dEdge>(AEdgeDirection));
+					const int32 SocketTypeB = Tile2dB->EdgeSocketTypes.FindRef(static_cast<EWFCTile2dEdge>(BEdgeDirection));
 
 					if (SocketTypeA == SocketTypeB)
 					{

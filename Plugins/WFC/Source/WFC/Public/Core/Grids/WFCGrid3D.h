@@ -4,42 +4,42 @@
 
 #include "CoreMinimal.h"
 #include "Core/WFCGrid.h"
-#include "WFCGrid2D.generated.h"
+#include "WFCGrid3D.generated.h"
 
 
 /**
- * A 2D grid configuration.
+ * A 3D grid configuration.
  */
 UCLASS()
-class WFC_API UWFCGrid2DConfig : public UWFCGridConfig
+class WFC_API UWFCGrid3DConfig : public UWFCGridConfig
 {
 	GENERATED_BODY()
 
 public:
-	UWFCGrid2DConfig();
+	UWFCGrid3DConfig();
 
 	/** The dimensions of the grid */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntPoint Dimensions;
+	FIntVector Dimensions;
 };
 
 
 /**
- * A 2D grid
+ * A 3D grid
  */
 UCLASS()
-class WFC_API UWFCGrid2D : public UWFCGrid
+class WFC_API UWFCGrid3D : public UWFCGrid
 {
 	GENERATED_BODY()
 
 public:
-	UWFCGrid2D();
+	UWFCGrid3D();
 
 	virtual void Initialize(const UWFCGridConfig* Config) override;
 
 	/** The dimensions of the grid */
 	UPROPERTY(BlueprintReadOnly)
-	FIntPoint Dimensions;
+	FIntVector Dimensions;
 
 	virtual int32 GetNumCells() const override;
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
@@ -49,27 +49,31 @@ public:
 
 	/** Return the cell index for a grid location */
 	UFUNCTION(BlueprintPure)
-	int32 GetCellIndexForLocation(FIntPoint GridLocation) const;
+	int32 GetCellIndexForLocation(FIntVector GridLocation) const;
 
 	/** Return the grid location for a cell */
 	UFUNCTION(BlueprintPure)
-	FIntPoint GetLocationForCellIndex(int32 CellIndex) const;
+	FIntVector GetLocationForCellIndex(int32 CellIndex) const;
 
 	/** Return the 2d vector for a direction */
-	static FIntPoint GetDirectionVector(FWFCGridDirection Direction)
+	static FIntVector GetDirectionVector(FWFCGridDirection Direction)
 	{
 		switch (Direction)
 		{
 		case 0:
-			return FIntPoint(1, 0);
+			return FIntVector(1, 0, 0);
 		case 1:
-			return FIntPoint(0, 1);
+			return FIntVector(0, 1, 0);
 		case 2:
-			return FIntPoint(-1, 0);
+			return FIntVector(-1, 0, 0);
 		case 3:
-			return FIntPoint(0, -1);
+			return FIntVector(0, -1, 0);
+		case 4:
+			return FIntVector(0, 0, 1);
+		case 5:
+			return FIntVector(0, 0, -1);
 		default:
-			return FIntPoint();
+			return FIntVector();
 		}
 	}
 };

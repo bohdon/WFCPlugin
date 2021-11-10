@@ -5,6 +5,7 @@
 
 #include "WFCAsset.h"
 #include "WFCModule.h"
+#include "WFCTileSet.h"
 #include "WFCTileSetGenerator.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
@@ -38,6 +39,12 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 	if (!WFCAsset->TileSet)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("No TileSet was specified: %s"), *WFCAsset->GetName());
+		return false;
+	}
+
+	if (WFCAsset->TileSet->TileAssets.Num() == 0)
+	{
+		UE_LOG(LogWFC, Warning, TEXT("TileSet has no tiles: %s"), *WFCAsset->TileSet->GetName());
 		return false;
 	}
 

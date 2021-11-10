@@ -4,22 +4,30 @@
 
 #include "CoreMinimal.h"
 #include "WFCTileSetGenerator.h"
-#include "WFCTileSet2DGenerator.generated.h"
+#include "WFCTileSet3DGenerator.generated.h"
 
 class UWFCAdjacencyConstraint;
 
 
 /**
- * Generates a tile for each asset and possible rotation on a 2D grid.
- * TODO: also generate reflections
+ * Generates a tile for each asset and possible 3D rotations.
  */
 UCLASS()
-class WFC_API UWFCTileSet2DGenerator : public UWFCTileSetGenerator
+class WFC_API UWFCTileSet3DGenerator : public UWFCTileSetGenerator
 {
 	GENERATED_BODY()
 
 public:
-	UWFCTileSet2DGenerator();
+	UWFCTileSet3DGenerator();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAllowYawRotation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAllowPitchRotation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAllowRollRotation;
 
 	virtual void GenerateTiles_Implementation(const UWFCTileSet* TileSet, TArray<FWFCTile>& OutTiles) const override;
 	virtual void ConfigureGeneratorForTiles_Implementation(const UWFCTileSet* TileSet, const UWFCModel* Model,

@@ -5,6 +5,7 @@
 
 
 UWFCGrid2DConfig::UWFCGrid2DConfig()
+	: Dimensions(FIntPoint(10, 10))
 {
 	GridClass = UWFCGrid2D::StaticClass();
 }
@@ -24,6 +25,11 @@ void UWFCGrid2D::Initialize(const UWFCGridConfig* Config)
 	check(Config2D != nullptr);
 
 	Dimensions = Config2D->Dimensions;
+}
+
+int32 UWFCGrid2D::GetNumCells() const
+{
+	return Dimensions.X * Dimensions.Y;
 }
 
 int32 UWFCGrid2D::GetOppositeDirection(FWFCGridDirection Direction) const
@@ -70,7 +76,7 @@ FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCG
 
 int32 UWFCGrid2D::GetCellIndexForLocation(FIntPoint GridLocation) const
 {
-	return (GridLocation.Y * Dimensions.X) + GridLocation.X;
+	return GridLocation.X + (GridLocation.Y * Dimensions.X);
 }
 
 FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
