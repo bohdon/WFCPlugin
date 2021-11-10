@@ -30,7 +30,7 @@ enum class EWFCGeneratorState : uint8
 };
 
 
-// TODO: allow subclassing FWFCCell to extend with additional per-cell data?
+// TODO: allow subclassing FWFCCell to extend with additional per-cell data for use with constraints?
 
 /**
  * Stores the state of a single cell within a grid during WFC generation.
@@ -98,44 +98,36 @@ struct FWFCTile
 };
 
 
-/**
- * An abstract direction that informs how to locate one tile from another.
- */
-UCLASS(Abstract, BlueprintType, DefaultToInstanced, EditInlineNew)
-class WFC_API UWFCDirection : public UObject
+struct FWFCCellIndexAndDirection
 {
-	GENERATED_BODY()
+	FWFCCellIndexAndDirection()
+		: CellIndex(INDEX_NONE),
+		  Direction(INDEX_NONE)
+	{
+	}
 
-public:
-	/** Return the string representation of the direction */
-	virtual FString ToString() const { return FString(); }
-};
+	FWFCCellIndexAndDirection(FWFCCellIndex InCellIndex, FWFCGridDirection InDirection)
+		: CellIndex(InCellIndex),
+		  Direction(InDirection)
+	{
+	}
 
-/**
- * A two dimensional direction
- */
-UCLASS()
-class WFC_API UWFCDirection2D : public UWFCDirection
-{
-	GENERATED_BODY()
+	FWFCCellIndex CellIndex;
 
-public:
-	/** The delta location implied by this direction */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntPoint Delta;
-};
+	FWFCGridDirection Direction;
 
+	bool operator==(const FWFCCellIndexAndDirection& Other) const
+	{
+		return CellIndex == Other.CellIndex && Direction == Other.Direction;
+	}
 
-/**
- * A three dimensional direction
- */
-UCLASS()
-class WFC_API UWFCDirection3D : public UWFCDirection
-{
-	GENERATED_BODY()
+	bool operator!=(const FWFCCellIndexAndDirection& Other) const
+	{
+		return !(operator==(Other));
+	}
 
-public:
-	/** The delta location implied by this direction */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntVector Delta;
+	friend uint32 GetTypeHash(const FWFCCellIndexAndDirection& IndexAndDirection)
+	{
+		return HashCombine(GetTypeHash(IndexAndDirection.CellIndex), GetTypeHash(IndexAndDirection.Direction));
+	}
 };

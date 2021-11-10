@@ -11,41 +11,6 @@ class UWFCGrid;
 class UWFCModel;
 
 
-struct FWFCCellIndexAndDirection
-{
-	FWFCCellIndexAndDirection()
-		: CellIndex(INDEX_NONE),
-		  Direction(INDEX_NONE)
-	{
-	}
-
-	FWFCCellIndexAndDirection(FWFCCellIndex InCellIndex, FWFCGridDirection InDirection)
-		: CellIndex(InCellIndex),
-		  Direction(InDirection)
-	{
-	}
-
-	FWFCCellIndex CellIndex;
-
-	FWFCGridDirection Direction;
-
-	bool operator==(const FWFCCellIndexAndDirection& Other) const
-	{
-		return CellIndex == Other.CellIndex && Direction == Other.Direction;
-	}
-
-	bool operator!=(const FWFCCellIndexAndDirection& Other) const
-	{
-		return !(operator==(Other));
-	}
-
-	friend uint32 GetTypeHash(const FWFCCellIndexAndDirection& IndexAndDirection)
-	{
-		return HashCombine(GetTypeHash(IndexAndDirection.CellIndex), GetTypeHash(IndexAndDirection.Direction));
-	}
-};
-
-
 /**
  * Handles running the actual processes for selecting, banning, and propagating
  * changes for a WFC model, grid, and tile set.
