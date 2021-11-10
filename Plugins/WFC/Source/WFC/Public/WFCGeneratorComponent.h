@@ -40,7 +40,7 @@ public:
 
 	/** Initialize the WFC generator */
 	UFUNCTION(BlueprintCallable)
-	void InitializeGenerator();
+	bool InitializeGenerator();
 
 	/** Run the generator and spawn all actors */
 	UFUNCTION(BlueprintCallable)
@@ -60,13 +60,13 @@ public:
 	FCellSelectedDynDelegate OnCellSelectedEvent_BP;
 
 protected:
+	/** The model instance. */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	UWFCModel* Model;
+
 	/** The generator instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
 	UWFCGenerator* Generator;
-
-	/** The model instance */
-	UPROPERTY(Transient, BlueprintReadOnly)
-	UWFCModel* Model;
 
 	void AddAdjacencyMappings();
 

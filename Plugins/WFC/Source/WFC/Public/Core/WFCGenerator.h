@@ -7,8 +7,35 @@
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 
+class UWFCConstraint;
 class UWFCGrid;
-class UWFCModel;
+
+
+/**
+ * Required objects and settings for initializing a WFCGenerator.
+ */
+USTRUCT(BlueprintType)
+struct FWFCGeneratorConfig
+{
+	GENERATED_BODY()
+
+	FWFCGeneratorConfig()
+		: NumTiles(0)
+	{
+	}
+
+	/** The grid being used */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<const UWFCGrid> Grid;
+
+	/** The total number of unique tile types. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 NumTiles;
+
+	/** The constraints to create and use. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
+};
 
 
 /**
@@ -23,13 +50,22 @@ class WFC_API UWFCGenerator : public UObject
 public:
 	UWFCGenerator();
 
+	/** The configuration supplied to this generator on initialize. */
+	UPROPERTY(BlueprintReadOnly)
+	FWFCGeneratorConfig Config;
+
 	/** The current state of the generator. */
 	UPROPERTY(BlueprintReadOnly)
 	EWFCGeneratorState State;
 
+	/** Return the total number of unique tile types. */
+	FORCEINLINE int32 GetNumTiles() const { return Config.NumTiles; }
+
+	FORCEINLINE const UWFCGrid* GetGrid() const { return Grid; }
+
 	/** Initialize the generator. */
 	UFUNCTION(BlueprintCallable)
-	void Initialize(const UWFCGrid* InGrid, const UWFCModel* InModel);
+	void Initialize(FWFCGeneratorConfig InConfig);
 
 	// TODO: make async
 	/** Run the generator until it is either finished, or an error occurs. */
@@ -57,7 +93,19 @@ public:
 
 	/** Return the selected tiles for every cell in the grid */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
-	void GetSelectedTiles(TArray<FWFCTile>& OutTiles) const;
+	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;
+
+	FORCEINLINE bool IsValidCellIndex(FWFCCellIndex Index) const { return Cells.IsValidIndex(Index); }
+
+	/** Return cell data by index */
+	FWFCCell& GetCell(FWFCCellIndex CellIndex);
+
+	/** Return cell data by index */
+	const FWFCCell& GetCell(FWFCCellIndex CellIndex) const;
+
+	FORCEINLINE TArray<UWFCConstraint*>& GetConstraints() { return Constraints; }
+
+	FORCEINLINE const TArray<UWFCConstraint*>& GetConstraints() const { return Constraints; }
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /* CellIndex */);
 
@@ -68,9 +116,9 @@ protected:
 	UPROPERTY(Transient)
 	const UWFCGrid* Grid;
 
-	/** The model being used */
+	/** The constraints to apply, in order of priority, during generation. */
 	UPROPERTY(Transient)
-	const UWFCModel* Model;
+	TArray<UWFCConstraint*> Constraints;
 
 	/** Array of all cells in the grid by cell index. */
 	TArray<FWFCCell> Cells;
@@ -80,47 +128,30 @@ protected:
 
 	bool bIsInitialized;
 
-	FORCEINLINE bool IsValidCellIndex(FWFCCellIndex Index) const { return Cells.IsValidIndex(Index); }
+	/** Create and initialize constraint objects. */
+	virtual void InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses);
 
-	/** Return cell data by index */
-	FWFCCell& GetCell(FWFCCellIndex Index);
-
-	/** Return cell data by index */
-	const FWFCCell& GetCell(FWFCCellIndex Index) const;
+	/** Populate the cells array with default values for every cell in the grid */
+	virtual void InitializeCells();
 
 	/** Called when the candidates for a cell have changed. */
-	virtual void OnCellChanged(FWFCCellIndex Index);
-
-	/**
-	 * Propagate all cached changes by checking and applying constraints.
-	 * @return True if any changes were propagated.
-	 */
-	virtual bool PropagateNext();
+	virtual void OnCellChanged(FWFCCellIndex CellIndex);
 
 	/** Return the next cell that should have a tile selected */
 	virtual FWFCCellIndex SelectNextCellIndex();
 
 	/** Return the tile to select for a cell */
-	virtual FWFCTileId SelectNextTileForCell(FWFCCellIndex Index);
+	virtual FWFCTileId SelectNextTileForCell(FWFCCellIndex CellIndex);
 
-
-	// Adjacency Constraint
-	// --------------------
 public:
-	void AddAdjacentTileMapping(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AcceptedTileId);
-
-protected:
-	/** Map of tiles that can be placed next to other tiles by id and direction */
-	TMap<FWFCTileId, TMap<FWFCGridDirection, TArray<FWFCTileId>>> TileAdjacencyMap;
-
-	/** Current list of cells adjacency constraints to check */
-	TArray<FWFCCellIndexAndDirection> AdjacentCellDirsToCheck;
-
-	void MarkCellForAdjacencyCheck(FWFCCellIndex Index);
-
-	/** @return True if a change was propagated, regardless of whether any cells changed. */
-	bool PropagateNextAdjacencyConstraint();
-
-	/** Return the array of all valid tiles that an be placed next to a tile in a direction */
-	TArray<FWFCTileId> GetValidAdjacentTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const;
+	template <class T>
+	T* GetConstraint()
+	{
+		T* Result = nullptr;
+		if (Constraints.FindItemByClass(&Result))
+		{
+			return Result;
+		}
+		return nullptr;
+	}
 };

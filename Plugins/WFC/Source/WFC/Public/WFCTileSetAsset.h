@@ -32,5 +32,5 @@ public:
 
 	/** Create and return an array of FWFCTiles representing each tile asset in the set */
 	UFUNCTION(BlueprintCallable)
-	void GetTiles(TArray<FWFCTile>& OutTiles);
+	void GenerateTiles(TArray<FWFCTile>& OutTiles);
 };

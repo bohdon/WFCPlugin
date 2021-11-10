@@ -4,8 +4,8 @@
 #include "Core/WFCGenerator.h"
 
 #include "WFCModule.h"
+#include "Core/WFCConstraint.h"
 #include "Core/WFCGrid.h"
-#include "Core/WFCModel.h"
 
 
 UWFCGenerator::UWFCGenerator()
@@ -13,32 +13,59 @@ UWFCGenerator::UWFCGenerator()
 {
 }
 
-void UWFCGenerator::Initialize(const UWFCGrid* InGrid, const UWFCModel* InModel)
+void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 {
 	if (!bIsInitialized)
 	{
-		Grid = InGrid;
-		Model = InModel;
+		check(InConfig.Grid.IsValid());
 
-		// initialize cells
-		TArray<FWFCTileId> AllTileCandidates;
-		AllTileCandidates.SetNum(Model->Tiles.Num());
-		for (int32 Idx = 0; Idx < AllTileCandidates.Num(); ++Idx)
-		{
-			// tile id is the same as the tile index
-			AllTileCandidates[Idx] = Idx;
-		}
-
-		NumCells = Grid->GetNumCells();
-		Cells.SetNum(NumCells);
-		for (FWFCCellIndex Idx = 0; Idx < NumCells; ++Idx)
-		{
-			Cells[Idx].TileCandidates = AllTileCandidates;
-		}
+		Config = InConfig;
+		Grid = Config.Grid.Get();
+		InitializeConstraints(Config.ConstraintClasses);
+		InitializeCells();
 
 		State = EWFCGeneratorState::InProgress;
 
 		bIsInitialized = true;
+	}
+}
+
+void UWFCGenerator::InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses)
+{
+	Constraints.Reset();
+	for (TSubclassOf<UWFCConstraint> ConstraintClass : ConstraintClasses)
+	{
+		UWFCConstraint* Constraint = NewObject<UWFCConstraint>(this, ConstraintClass);
+		if (Constraint)
+		{
+			Constraints.Add(Constraint);
+		}
+	}
+
+	// initialize once all constraints are constructed in case they need to reference each other
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		Constraint->Initialize(this);
+	}
+}
+
+void UWFCGenerator::InitializeCells()
+{
+	// generate array of all tile ids for default cell candidate list
+	TArray<FWFCTileId> AllTileCandidates;
+	AllTileCandidates.SetNum(GetNumTiles());
+	for (int32 Idx = 0; Idx < AllTileCandidates.Num(); ++Idx)
+	{
+		// tile id is the same as the tile index
+		AllTileCandidates[Idx] = Idx;
+	}
+
+	// fill the cells array
+	NumCells = Grid->GetNumCells();
+	Cells.SetNum(NumCells);
+	for (FWFCCellIndex Idx = 0; Idx < NumCells; ++Idx)
+	{
+		Cells[Idx].TileCandidates = AllTileCandidates;
 	}
 }
 
@@ -64,10 +91,13 @@ void UWFCGenerator::Run(int32 StepLimit)
 
 void UWFCGenerator::Next()
 {
-	if (PropagateNext())
+	// update all constraints, which may lead to cell selection 
+	for (UWFCConstraint* Constraint : Constraints)
 	{
-		// some changes were propagated, that's enough for this step
-		return;
+		if (Constraint->Next())
+		{
+			return;
+		}
 	}
 
 	// select a cell to observe
@@ -144,43 +174,37 @@ void UWFCGenerator::Select(int32 CellIndex, int32 TileId)
 	}
 }
 
-void UWFCGenerator::GetSelectedTiles(TArray<FWFCTile>& OutTiles) const
+void UWFCGenerator::GetSelectedTileIds(TArray<int32>& OutTileIds) const
 {
-	OutTiles.SetNum(NumCells);
-
+	OutTileIds.SetNum(NumCells);
 	for (FWFCCellIndex Idx = 0; Idx < NumCells; ++Idx)
 	{
 		const FWFCCell& Cell = GetCell(Idx);
-		const FWFCTileId TileId = Cell.GetSelectedTileId();
-		OutTiles[Idx] = Model->GetTile(TileId);
+		OutTileIds[Idx] = Cell.GetSelectedTileId();
 	}
 }
 
-FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex Index)
+FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex CellIndex)
 {
-	return Cells[Index];
+	return Cells[CellIndex];
 }
 
-const FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex Index) const
+const FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex CellIndex) const
 {
-	return Cells[Index];
+	return Cells[CellIndex];
 }
 
-void UWFCGenerator::OnCellChanged(FWFCCellIndex Index)
+void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 {
-	if (GetCell(Index).HasSelection())
+	if (GetCell(CellIndex).HasSelection())
 	{
-		OnCellSelected.Broadcast(Index);
+		OnCellSelected.Broadcast(CellIndex);
 	}
 
-	// TODO: move this to adjacent constraint
-	MarkCellForAdjacencyCheck(Index);
-}
-
-bool UWFCGenerator::PropagateNext()
-{
-	// TODO: move this to adjacent constraint
-	return PropagateNextAdjacencyConstraint();
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		Constraint->NotifyCellChanged(CellIndex);
+	}
 }
 
 FWFCCellIndex UWFCGenerator::SelectNextCellIndex()
@@ -189,77 +213,8 @@ FWFCCellIndex UWFCGenerator::SelectNextCellIndex()
 	return INDEX_NONE;
 }
 
-FWFCTileId UWFCGenerator::SelectNextTileForCell(FWFCCellIndex Index)
+FWFCTileId UWFCGenerator::SelectNextTileForCell(FWFCCellIndex CellIndex)
 {
 	// implement in subclass
 	return INDEX_NONE;
-}
-
-void UWFCGenerator::AddAdjacentTileMapping(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AcceptedTileId)
-{
-	TileAdjacencyMap.FindOrAdd(TileId).FindOrAdd(Direction).AddUnique(AcceptedTileId);
-}
-
-
-// Adjacency Constraint
-// --------------------
-
-void UWFCGenerator::MarkCellForAdjacencyCheck(FWFCCellIndex Index)
-{
-	// apply adjacency constraints
-	const int32 NumDirections = Grid->GetNumDirections();
-	for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
-	{
-		AdjacentCellDirsToCheck.AddUnique(FWFCCellIndexAndDirection(Index, Direction));
-	}
-}
-
-bool UWFCGenerator::PropagateNextAdjacencyConstraint()
-{
-	while (AdjacentCellDirsToCheck.Num() > 0)
-	{
-		const FWFCCellIndexAndDirection CellDir = AdjacentCellDirsToCheck[0];
-		check(Grid->IsValidCellIndex(CellDir.CellIndex));
-		AdjacentCellDirsToCheck.RemoveAt(0);
-
-		const FWFCCell& ChangedCell = GetCell(CellDir.CellIndex);
-
-		// find the cell in the direction to check
-		const FWFCCellIndex CellIndexToCheck = Grid->GetCellIndexInDirection(CellDir.CellIndex, CellDir.Direction);
-		if (!Grid->IsValidCellIndex(CellIndexToCheck))
-		{
-			continue;
-		}
-
-		const FWFCCell& CellToCheck = GetCell(CellIndexToCheck);
-		if (CellToCheck.HasSelection())
-		{
-			// don't change cells that are already selected
-			continue;
-		}
-
-		// check all candidates and ban any that don't pass the constraint
-		// (iterate in reverse to support banning)
-		for (int32 Idx = CellToCheck.TileCandidates.Num() - 1; Idx >= 0; --Idx)
-		{
-			const FWFCTileId& TileId = CellToCheck.TileCandidates[Idx];
-			TArray<FWFCTileId> AllowedIncomingTileIds = GetValidAdjacentTileIds(TileId, CellDir.Direction);
-			if (!ChangedCell.HasAnyMatchingCandidate(AllowedIncomingTileIds))
-			{
-				Ban(CellIndexToCheck, TileId);
-			}
-		}
-
-		// this next call is finished if any cell was selected
-		if (CellToCheck.HasSelection())
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-TArray<FWFCTileId> UWFCGenerator::GetValidAdjacentTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const
-{
-	return TileAdjacencyMap.FindRef(TileId).FindRef(Direction);
 }

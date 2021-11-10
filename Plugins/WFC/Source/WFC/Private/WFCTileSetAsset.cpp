@@ -6,7 +6,7 @@
 #include "WFCTileAsset.h"
 
 
-void UWFCTileSetAsset::GetTiles(TArray<FWFCTile>& OutTiles)
+void UWFCTileSetAsset::GenerateTiles(TArray<FWFCTile>& OutTiles)
 {
 	// add each tile for each 90 degree rotation
 	OutTiles.SetNum(TileAssets.Num() * 4);

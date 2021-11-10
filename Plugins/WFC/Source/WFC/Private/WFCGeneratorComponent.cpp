@@ -10,6 +10,7 @@
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
+#include "Core/Constraints/WFCAdjacencyConstraint.h"
 
 
 UWFCGeneratorComponent::UWFCGeneratorComponent()
@@ -17,7 +18,6 @@ UWFCGeneratorComponent::UWFCGeneratorComponent()
 	  bAutoRun(true)
 {
 }
-
 
 void UWFCGeneratorComponent::BeginPlay()
 {
@@ -29,36 +29,52 @@ void UWFCGeneratorComponent::BeginPlay()
 	}
 }
 
-void UWFCGeneratorComponent::InitializeGenerator()
+bool UWFCGeneratorComponent::InitializeGenerator()
 {
 	if (!WFCAsset)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("No WFCAsset was specified: %s"), *GetNameSafe(GetOwner()));
-		return;
-	}
-
-	if (!WFCAsset->GeneratorClass)
-	{
-		UE_LOG(LogWFC, Warning, TEXT("No GeneratorClass was specified: %s"), *WFCAsset->GetName());
-		return;
+		return false;
 	}
 
 	if (!WFCAsset->TileSet)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("No TileSet was specified: %s"), *WFCAsset->GetName());
-		return;
+		return false;
 	}
 
+	if (!WFCAsset->ModelClass)
+	{
+		UE_LOG(LogWFC, Warning, TEXT("No ModelClass was specified: %s"), *WFCAsset->GetName());
+		return false;
+	}
+
+	if (!WFCAsset->GeneratorClass)
+	{
+		UE_LOG(LogWFC, Warning, TEXT("No GeneratorClass was specified: %s"), *WFCAsset->GetName());
+		return false;
+	}
+
+	// create and initialize the model and generate all tiles
+	Model = NewObject<UWFCModel>(this, WFCAsset->ModelClass);
+	WFCAsset->TileSet->GenerateTiles(Model->Tiles);
+
+	// create and initialize the generator
 	Generator = NewObject<UWFCGenerator>(this, WFCAsset->GeneratorClass);
 	Generator->OnCellSelected.AddUObject(this, &UWFCGeneratorComponent::OnCellSelected);
 
-	Model = NewObject<UWFCModel>(this);
-	WFCAsset->TileSet->GetTiles(Model->Tiles);
+	FWFCGeneratorConfig Config;
+	Config.Grid = WFCAsset->Grid;
+	Config.NumTiles = Model->GetNumTiles();
+	Config.ConstraintClasses = WFCAsset->ConstraintClasses;
 
-	// TODO: add to model or something, move constraints
+	Generator->Initialize(Config);
+
+	// configure constraints
+	// TODO: move into constraint?
 	AddAdjacencyMappings();
 
-	Generator->Initialize(WFCAsset->Grid, Model);
+	return true;
 }
 
 void UWFCGeneratorComponent::Run()
@@ -80,7 +96,14 @@ void UWFCGeneratorComponent::GetSelectedTiles(TArray<FWFCTile>& OutTiles) const
 {
 	if (Generator)
 	{
-		Generator->GetSelectedTiles(OutTiles);
+		TArray<int32> TileIds;
+		Generator->GetSelectedTileIds(TileIds);
+
+		OutTiles.SetNum(TileIds.Num());
+		for (int32 Idx = 0; Idx < TileIds.Num(); ++Idx)
+		{
+			OutTiles[Idx] = Model->GetTile(TileIds[Idx]);
+		}
 	}
 	else
 	{
@@ -94,7 +117,15 @@ void UWFCGeneratorComponent::AddAdjacencyMappings()
 	{
 		return;
 	}
-	const UWFCGrid* Grid = WFCAsset->Grid;
+
+	UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>();
+	if (!AdjacencyConstraint)
+	{
+		return;
+	}
+
+	const UWFCGrid* Grid = Generator->GetGrid();
+	check(Grid != nullptr);
 
 	// TODO: don't check adjacency for B -> A if A -> B has already been checked, change AddAdjacentTileMapping to include both
 
@@ -125,7 +156,7 @@ void UWFCGeneratorComponent::AddAdjacencyMappings()
 
 					if (SocketTypeA == SocketTypeB)
 					{
-						Generator->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
+						AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
 					}
 				}
 			}
