@@ -8,6 +8,23 @@
 
 
 /**
+ * A 2D grid configuration.
+ */
+UCLASS()
+class WFC_API UWFCGrid2DConfig : public UWFCGridConfig
+{
+	GENERATED_BODY()
+
+public:
+	UWFCGrid2DConfig();
+
+	/** The dimensions of the grid */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FIntPoint Dimensions;
+};
+
+
+/**
  * A 2D grid
  */
 UCLASS()
@@ -18,11 +35,13 @@ class WFC_API UWFCGrid2D : public UWFCGrid
 public:
 	UWFCGrid2D();
 
-	/** The size of the grid */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FIntPoint GridDimensions;
+	virtual void Initialize(const UWFCGridConfig* Config) override;
 
-	FORCEINLINE virtual int32 GetNumCells() const override { return GridDimensions.X * GridDimensions.Y; }
+	/** The dimensions of the grid */
+	UPROPERTY(BlueprintReadOnly)
+	FIntPoint Dimensions;
+
+	FORCEINLINE virtual int32 GetNumCells() const override { return Dimensions.X * Dimensions.Y; }
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
 	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const override;

@@ -17,17 +17,23 @@ void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 {
 	if (!bIsInitialized)
 	{
-		check(InConfig.Grid.IsValid());
-
 		Config = InConfig;
-		Grid = Config.Grid.Get();
-		InitializeConstraints(Config.ConstraintClasses);
+
+		InitializeGrid(Config.GridConfig.Get());
 		InitializeCells();
+		InitializeConstraints(Config.ConstraintClasses);
 
 		State = EWFCGeneratorState::InProgress;
 
 		bIsInitialized = true;
 	}
+}
+
+void UWFCGenerator::InitializeGrid(const UWFCGridConfig* GridConfig)
+{
+	check(GridConfig != nullptr);
+	Grid = UWFCGrid::NewGrid(this, GridConfig);
+	check(Grid != nullptr);
 }
 
 void UWFCGenerator::InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses)

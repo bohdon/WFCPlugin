@@ -19,6 +19,9 @@ class WFC_API UWFCConstraint : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Return the generator that owns this constraint */
+	FORCEINLINE UWFCGenerator* GetGenerator() const { return Generator; }
+
 	/** Initialize the constraint for a generator */
 	virtual void Initialize(UWFCGenerator* InGenerator);
 

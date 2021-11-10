@@ -4,10 +4,26 @@
 #include "Core/Grids/WFCGrid2D.h"
 
 
+UWFCGrid2DConfig::UWFCGrid2DConfig()
+{
+	GridClass = UWFCGrid2D::StaticClass();
+}
+
+
 UWFCGrid2D::UWFCGrid2D()
-	: GridDimensions(FIntPoint(10, 10))
+	: Dimensions(FIntPoint(10, 10))
 {
 	// TODO: set default array of direction objects
+}
+
+void UWFCGrid2D::Initialize(const UWFCGridConfig* Config)
+{
+	Super::Initialize(Config);
+
+	const UWFCGrid2DConfig* Config2D = Cast<UWFCGrid2DConfig>(Config);
+	check(Config2D != nullptr);
+
+	Dimensions = Config2D->Dimensions;
 }
 
 int32 UWFCGrid2D::GetOppositeDirection(FWFCGridDirection Direction) const
@@ -54,12 +70,12 @@ FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCG
 
 int32 UWFCGrid2D::GetCellIndexForLocation(FIntPoint GridLocation) const
 {
-	return (GridLocation.Y * GridDimensions.X) + GridLocation.X;
+	return (GridLocation.Y * Dimensions.X) + GridLocation.X;
 }
 
 FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
 {
-	const int32 X = CellIndex % GridDimensions.X;
-	const int32 Y = (CellIndex - X) / GridDimensions.X;
+	const int32 X = CellIndex % Dimensions.X;
+	const int32 Y = (CellIndex - X) / Dimensions.X;
 	return FIntPoint(X, Y);
 }

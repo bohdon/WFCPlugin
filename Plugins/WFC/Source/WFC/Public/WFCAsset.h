@@ -8,9 +8,10 @@
 #include "WFCAsset.generated.h"
 
 class UWFCGenerator;
-class UWFCGrid;
+class UWFCGridConfig;
 class UWFCModel;
-class UWFCTileSetAsset;
+class UWFCTileSet;
+class UWFCTileSetGenerator;
 
 
 /**
@@ -36,11 +37,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, NoClear, meta = (DisplayName = "Model"))
 	TSubclassOf<UWFCModel> ModelClass;
 
-	/** The grid to populate. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TObjectPtr<UWFCGrid> Grid;
+	/** The grid and configuration. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
+	TObjectPtr<UWFCGridConfig> GridConfig;
 
 	/** The tile set to use, which contains all available tiles as well as relevant data specific to the set. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UWFCTileSetAsset> TileSet;
+	TObjectPtr<UWFCTileSet> TileSet;
+
+	/**
+	 * The generator to use for converting the tile sets into tiles within the model,
+	 * as well as configuring the generator and any constraints in ways specific to the tile set.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
+	TObjectPtr<UWFCTileSetGenerator> TileGenerator;
 };

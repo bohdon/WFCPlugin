@@ -11,16 +11,39 @@ class UWFCDirection;
 
 
 /**
+ * A configuration object associated with a grid.
+ * Contains all the settings needed to create and initialize a grid.
+ */
+UCLASS(Abstract, BlueprintType, DefaultToInstanced, EditInlineNew)
+class WFC_API UWFCGridConfig : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UWFCGridConfig();
+
+	/** The grid class to spawn for this config */
+	TSubclassOf<class UWFCGrid> GridClass;
+};
+
+
+/**
  * Base class for any type of WFC grid.
  * Grids contain cells, which are then populated with the parts of a tile during generation.
  */
-UCLASS(Abstract, BlueprintType, DefaultToInstanced, EditInlineNew)
+UCLASS(Abstract, BlueprintType)
 class WFC_API UWFCGrid : public UObject
 {
 	GENERATED_BODY()
 
 public:
 	UWFCGrid();
+
+	/** Create a new grid object and initialize it using a config */
+	static UWFCGrid* NewGrid(UObject* Outer, const UWFCGridConfig* Config);
+
+	/** Initialize the grid */
+	virtual void Initialize(const UWFCGridConfig* Config);
 
 	/** Return the total number of cells in this grid */
 	virtual int32 GetNumCells() const { return 0; }

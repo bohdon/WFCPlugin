@@ -9,6 +9,7 @@
 
 class UWFCAsset;
 class UWFCGenerator;
+class UWFCGrid;
 class UWFCModel;
 
 
@@ -24,7 +25,7 @@ class WFC_API UWFCGeneratorComponent : public UActorComponent
 public:
 	UWFCGeneratorComponent();
 
-	/** The asset defining which model and tile set to use */
+	/** The asset which contains all settings needed to create and run the generator. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UWFCAsset> WFCAsset;
 
@@ -45,6 +46,10 @@ public:
 	/** Run the generator and spawn all actors */
 	UFUNCTION(BlueprintCallable)
 	void Run();
+
+	/** Return the grid being used by the generator. */
+	UFUNCTION(BlueprintPure)
+	const UWFCGrid* GetGrid() const;
 
 	/** Return the current state of the generator */
 	UFUNCTION(BlueprintPure)
@@ -67,8 +72,6 @@ protected:
 	/** The generator instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
 	UWFCGenerator* Generator;
-
-	void AddAdjacencyMappings();
 
 	void OnCellSelected(int32 CellIndex);
 };

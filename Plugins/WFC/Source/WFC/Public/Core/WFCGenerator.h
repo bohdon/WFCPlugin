@@ -7,8 +7,9 @@
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 
-class UWFCConstraint;
 class UWFCGrid;
+class UWFCGridConfig;
+class UWFCConstraint;
 
 
 /**
@@ -24,19 +25,20 @@ struct FWFCGeneratorConfig
 	{
 	}
 
-	/** The grid being used */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TWeakObjectPtr<const UWFCGrid> Grid;
-
 	/** The total number of unique tile types. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 NumTiles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<const UWFCGridConfig> GridConfig;
 
 	/** The constraints to create and use. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
 };
 
+
+// TODO: make async
 
 /**
  * Handles running the actual processes for selecting, banning, and propagating
@@ -67,7 +69,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Initialize(FWFCGeneratorConfig InConfig);
 
-	// TODO: make async
 	/** Run the generator until it is either finished, or an error occurs. */
 	UFUNCTION(BlueprintCallable)
 	void Run(int32 StepLimit = 100000);
@@ -91,10 +92,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Select(int32 CellIndex, int32 TileId);
 
-	/** Return the selected tiles for every cell in the grid */
-	UFUNCTION(BlueprintCallable, BlueprintPure = false)
-	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;
-
 	FORCEINLINE bool IsValidCellIndex(FWFCCellIndex Index) const { return Cells.IsValidIndex(Index); }
 
 	/** Return cell data by index */
@@ -106,6 +103,10 @@ public:
 	FORCEINLINE TArray<UWFCConstraint*>& GetConstraints() { return Constraints; }
 
 	FORCEINLINE const TArray<UWFCConstraint*>& GetConstraints() const { return Constraints; }
+
+	/** Return the selected tiles for every cell in the grid */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /* CellIndex */);
 
@@ -127,6 +128,9 @@ protected:
 	int32 NumCells;
 
 	bool bIsInitialized;
+
+	/** Create and initialize the grid. */
+	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);
 
 	/** Create and initialize constraint objects. */
 	virtual void InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses);
