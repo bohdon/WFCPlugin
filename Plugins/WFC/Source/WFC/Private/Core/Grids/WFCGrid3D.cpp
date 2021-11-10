@@ -93,3 +93,24 @@ FIntVector UWFCGrid3D::GetLocationForCellIndex(int32 CellIndex) const
 	const int32 X = CellIndex % Dimensions.X;
 	return FIntVector(X, Y, Z);
 }
+
+FIntVector UWFCGrid3D::GetDirectionVector(FWFCGridDirection Direction)
+{
+	switch (Direction)
+	{
+	case 0:
+		return FIntVector(1, 0, 0);
+	case 1:
+		return FIntVector(0, 1, 0);
+	case 2:
+		return FIntVector(-1, 0, 0);
+	case 3:
+		return FIntVector(0, -1, 0);
+	case 4:
+		return FIntVector(0, 0, 1);
+	case 5:
+		return FIntVector(0, 0, -1);
+	default:
+		return FIntVector();
+	}
+}

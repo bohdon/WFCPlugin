@@ -6,7 +6,6 @@
 #include "WFCAsset.h"
 #include "WFCModule.h"
 #include "WFCTileSet.h"
-#include "WFCTileSetGenerator.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"

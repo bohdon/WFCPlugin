@@ -56,24 +56,5 @@ public:
 	FIntVector GetLocationForCellIndex(int32 CellIndex) const;
 
 	/** Return the 2d vector for a direction */
-	static FIntVector GetDirectionVector(FWFCGridDirection Direction)
-	{
-		switch (Direction)
-		{
-		case 0:
-			return FIntVector(1, 0, 0);
-		case 1:
-			return FIntVector(0, 1, 0);
-		case 2:
-			return FIntVector(-1, 0, 0);
-		case 3:
-			return FIntVector(0, -1, 0);
-		case 4:
-			return FIntVector(0, 0, 1);
-		case 5:
-			return FIntVector(0, 0, -1);
-		default:
-			return FIntVector();
-		}
-	}
+	static FIntVector GetDirectionVector(FWFCGridDirection Direction);
 };

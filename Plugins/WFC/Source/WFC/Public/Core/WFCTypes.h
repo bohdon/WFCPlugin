@@ -30,8 +30,6 @@ enum class EWFCGeneratorState : uint8
 };
 
 
-// TODO: allow subclassing FWFCCell to extend with additional per-cell data for use with constraints?
-
 /**
  * Stores the state of a single cell within a grid during WFC generation.
  * Most importantly it keeps track of all tile candidates still available for a cell.
@@ -68,36 +66,6 @@ struct FWFCCell
 };
 
 
-/**
- * Represents a tile that can be selected for a cell.
- * Maintains a weak reference to an object associated with the tile.
- */
-USTRUCT(BlueprintType)
-struct FWFCTile
-{
-	GENERATED_BODY()
-
-	FWFCTile()
-		: Rotation(0)
-	{
-	}
-
-	FWFCTile(UObject* InObject, int32 InRotation = 0)
-		: Object(InObject),
-		  Rotation(InRotation)
-	{
-	}
-
-	/** The object this tile represents. Could be an actor, texture, or other object */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TWeakObjectPtr<UObject> Object;
-
-	/** The rotation of this tile relative to its definition. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 Rotation;
-};
-
-
 struct FWFCCellIndexAndDirection
 {
 	FWFCCellIndexAndDirection()
@@ -130,4 +98,36 @@ struct FWFCCellIndexAndDirection
 	{
 		return HashCombine(GetTypeHash(IndexAndDirection.CellIndex), GetTypeHash(IndexAndDirection.Direction));
 	}
+};
+
+
+/**
+ * Contains all relevant data about a tile needed to select tiles
+ * and generate final output from the model once selected.
+ * Designed to be subclassed to add any additional or relevant info about each tile.
+ */
+USTRUCT(BlueprintType)
+struct FWFCModelTile
+{
+	GENERATED_BODY()
+
+	FWFCModelTile()
+		: Id(INDEX_NONE),
+		  Weight(1.f)
+	{
+	}
+
+	virtual ~FWFCModelTile()
+	{
+	}
+
+	/** The id of this tile */
+	UPROPERTY(BlueprintReadOnly)
+	int32 Id;
+
+	/** The probability weight of this tile */
+	UPROPERTY(BlueprintReadOnly)
+	float Weight;
+
+	virtual FString ToString() const { return FString::Printf(TEXT("[%d](W%0.2f)"), Id, Weight); }
 };

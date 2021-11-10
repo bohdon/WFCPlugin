@@ -10,38 +10,6 @@
 class UWFCGenerator;
 
 
-/**
- * Contains all relevant data about a tile needed to construct
- * a final output from the model once tile ids have been selected.
- * Designed to be subclassed to add any additional or relevant info about each tile.
- */
-USTRUCT(BlueprintType)
-struct FWFCModelTile
-{
-	GENERATED_BODY()
-
-	FWFCModelTile()
-		: Id(INDEX_NONE),
-		  Weight(1.f)
-	{
-	}
-
-	virtual ~FWFCModelTile()
-	{
-	}
-
-	/** The id of this tile */
-	UPROPERTY(BlueprintReadOnly)
-	int32 Id;
-
-	/** The probability weight of this tile */
-	UPROPERTY(BlueprintReadOnly)
-	float Weight;
-
-	virtual FString ToString() const { return FString::Printf(TEXT("[%d](W%0.2f)"), Id, Weight); }
-};
-
-
 // TODO: rename UWFCTileGenerator
 
 /**
