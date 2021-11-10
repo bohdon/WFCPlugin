@@ -44,7 +44,8 @@ public:
 	virtual int32 GetNumCells() const override;
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
-	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const override;
+	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
+	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
 
 	/** Return the cell index for a grid location */
@@ -56,20 +57,5 @@ public:
 	FIntPoint GetLocationForCellIndex(int32 CellIndex) const;
 
 	/** Return the 2d vector for a direction */
-	static FIntPoint GetDirectionVector(FWFCGridDirection Direction)
-	{
-		switch (Direction)
-		{
-		case 0:
-			return FIntPoint(1, 0);
-		case 1:
-			return FIntPoint(0, 1);
-		case 2:
-			return FIntPoint(-1, 0);
-		case 3:
-			return FIntPoint(0, -1);
-		default:
-			return FIntPoint();
-		}
-	}
+	static FIntPoint GetDirectionVector(FWFCGridDirection Direction);
 };

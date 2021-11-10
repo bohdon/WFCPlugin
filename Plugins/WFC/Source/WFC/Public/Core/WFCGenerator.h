@@ -39,6 +39,7 @@ struct FWFCGeneratorConfig
 
 
 // TODO: make async
+// TODO: rename UWFCTileSelector
 
 /**
  * Handles running the actual processes for selecting, banning, and propagating
@@ -60,10 +61,21 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	EWFCGeneratorState State;
 
+	/** Return the total number of cells */
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE int32 GetNumCells() const { return NumCells; }
+
 	/** Return the total number of unique tile types. */
+	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumTiles() const { return Config.NumTiles; }
 
 	FORCEINLINE const UWFCGrid* GetGrid() const { return Grid; }
+
+	template <class T>
+	const T* GetGrid() const
+	{
+		return Cast<T>(GetGrid());
+	}
 
 	/** Initialize the generator. */
 	UFUNCTION(BlueprintCallable)
@@ -99,6 +111,10 @@ public:
 
 	/** Return cell data by index */
 	const FWFCCell& GetCell(FWFCCellIndex CellIndex) const;
+
+	/** Return the total number of candidates for a cell */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	int32 GetNumCellCandidates(int32 CellIndex) const;
 
 	FORCEINLINE TArray<UWFCConstraint*>& GetConstraints() { return Constraints; }
 

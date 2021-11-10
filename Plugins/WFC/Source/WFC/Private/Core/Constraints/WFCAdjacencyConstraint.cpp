@@ -72,15 +72,19 @@ bool UWFCAdjacencyConstraint::Next()
 		}
 
 		// check all candidates and ban any that don't pass the constraint
-		// (iterate in reverse to support banning)
-		for (int32 Idx = CellToCheck.TileCandidates.Num() - 1; Idx >= 0; --Idx)
+		TArray<FWFCTileId> TileIdsToBan;
+		for (int32 Idx = 0; Idx < CellToCheck.TileCandidates.Num(); ++Idx)
 		{
 			const FWFCTileId& TileId = CellToCheck.TileCandidates[Idx];
 			TArray<FWFCTileId> AllowedIncomingTileIds = GetValidAdjacentTileIds(TileId, CellDir.Direction);
 			if (!ChangedCell.HasAnyMatchingCandidate(AllowedIncomingTileIds))
 			{
-				Generator->Ban(CellIndexToCheck, TileId);
+				TileIdsToBan.Add(TileId);
 			}
+		}
+		if (TileIdsToBan.Num() > 0)
+		{
+			Generator->BanMultiple(CellIndexToCheck, TileIdsToBan);
 		}
 
 		// this next call is finished if any cell was selected

@@ -54,7 +54,7 @@ int32 UWFCGrid3D::GetOppositeDirection(FWFCGridDirection Direction) const
 	}
 }
 
-FWFCGridDirection UWFCGrid3D::GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const
+FWFCGridDirection UWFCGrid3D::RotateDirection(FWFCGridDirection Direction, int32 Rotation) const
 {
 	// don't rotate invalid direction, or Z directions (only yaw is currently supported)
 	if (!IsValidDirection(Direction) || Direction >= 4)

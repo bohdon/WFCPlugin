@@ -11,7 +11,6 @@ class UWFCGenerator;
 class UWFCGridConfig;
 class UWFCModel;
 class UWFCTileSet;
-class UWFCTileSetGenerator;
 
 
 /**
@@ -33,8 +32,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Constraints"))
 	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
 
-	/** The model class to use, which will contain all tile definitions and control the mapping of tile ids to tiles. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, NoClear, meta = (DisplayName = "Model"))
+	/**
+	 * The model class to use, which will generate all tiles and map them to tile ids.
+	 * The model is also able to configure the generator and all constraints as desired.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Model"))
 	TSubclassOf<UWFCModel> ModelClass;
 
 	/** The grid and configuration. */
@@ -44,11 +46,4 @@ public:
 	/** The tile set to use, which contains all available tiles as well as relevant data specific to the set. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UWFCTileSet> TileSet;
-
-	/**
-	 * The generator to use for converting the tile sets into tiles within the model,
-	 * as well as configuring the generator and any constraints in ways specific to the tile set.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
-	TObjectPtr<UWFCTileSetGenerator> TileGenerator;
 };

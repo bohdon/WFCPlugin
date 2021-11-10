@@ -5,23 +5,29 @@
 
 
 UWFCTile2DAsset::UWFCTile2DAsset()
+	: Dimensions(FIntPoint(1, 1)),
+	  bAllowRotation(true)
 {
-	EdgeSocketTypes = {
-		{EWFCTile2DEdge::XPos, 0},
-		{EWFCTile2DEdge::YPos, 0},
-		{EWFCTile2DEdge::XNeg, 0},
-		{EWFCTile2DEdge::YNeg, 0},
-	};
+}
+
+FWFCTileDef2D UWFCTile2DAsset::GetTileDefByLocation(FIntPoint Location) const
+{
+	for (const FWFCTileDef2D& TileDef : TileDefs)
+	{
+		if (TileDef.Location == Location)
+		{
+			return TileDef;
+		}
+	}
+	return FWFCTileDef2D();
+}
+
+FWFCTileDef2D UWFCTile2DAsset::GetTileDefByIndex(int32 Index) const
+{
+	return TileDefs.IsValidIndex(Index) ? TileDefs[Index] : FWFCTileDef2D();
 }
 
 UWFCTile3DAsset::UWFCTile3DAsset()
+	: bAllowRotations(true)
 {
-	EdgeSocketTypes = {
-		{EWFCTile3DEdge::XPos, 0},
-		{EWFCTile3DEdge::YPos, 0},
-		{EWFCTile3DEdge::XNeg, 0},
-		{EWFCTile3DEdge::YNeg, 0},
-		{EWFCTile3DEdge::ZPos, 0},
-		{EWFCTile3DEdge::ZNeg, 0},
-	};
 }

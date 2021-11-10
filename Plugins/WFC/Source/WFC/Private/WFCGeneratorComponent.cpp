@@ -48,12 +48,6 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 		return false;
 	}
 
-	if (!WFCAsset->TileGenerator)
-	{
-		UE_LOG(LogWFC, Warning, TEXT("No TileGenerator was specified: %s"), *WFCAsset->GetName());
-		return false;
-	}
-
 	if (!WFCAsset->ModelClass)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("No ModelClass was specified: %s"), *WFCAsset->GetName());
@@ -69,9 +63,8 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 	// create and initialize the model and generate all tiles
 	Model = NewObject<UWFCModel>(this, WFCAsset->ModelClass);
 	check(Model != nullptr);
-
-	const UWFCTileSetGenerator* TileGenerator = WFCAsset->TileGenerator;
-	TileGenerator->GenerateTiles(WFCAsset->TileSet, Model->Tiles);
+	Model->Initialize(WFCAsset->TileSet);
+	Model->GenerateTiles();
 
 	// create and initialize the generator
 	Generator = NewObject<UWFCGenerator>(this, WFCAsset->GeneratorClass);
@@ -85,7 +78,7 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 
 	Generator->Initialize(Config);
 
-	TileGenerator->ConfigureGeneratorForTiles(WFCAsset->TileSet, Model, Generator);
+	Model->ConfigureGenerator(Generator);
 
 	return true;
 }
@@ -110,38 +103,30 @@ EWFCGeneratorState UWFCGeneratorComponent::GetState() const
 	return Generator ? Generator->State : EWFCGeneratorState::None;
 }
 
-void UWFCGeneratorComponent::GetSelectedTile(int32 CellIndex, bool& bSuccess, FWFCTile& Tile) const
+void UWFCGeneratorComponent::GetSelectedTileId(int32 CellIndex, bool& bSuccess, int32& TileId) const
 {
-	Tile = FWFCTile();
+	TileId = INDEX_NONE;
 	bSuccess = false;
 	if (Generator)
 	{
 		const FWFCCell& Cell = Generator->GetCell(CellIndex);
 		if (Cell.HasSelection())
 		{
-			const FWFCTileId TileId = Cell.GetSelectedTileId();
-			Tile = Model->GetTile(TileId);
+			TileId = Cell.GetSelectedTileId();
 			bSuccess = true;
 		}
 	}
 }
 
-void UWFCGeneratorComponent::GetSelectedTiles(TArray<FWFCTile>& OutTiles) const
+void UWFCGeneratorComponent::GetSelectedTileIds(TArray<int32>& TileIds) const
 {
 	if (Generator)
 	{
-		TArray<int32> TileIds;
 		Generator->GetSelectedTileIds(TileIds);
-
-		OutTiles.SetNum(TileIds.Num());
-		for (int32 Idx = 0; Idx < TileIds.Num(); ++Idx)
-		{
-			OutTiles[Idx] = Model->GetTile(TileIds[Idx]);
-		}
 	}
 	else
 	{
-		OutTiles.Reset();
+		TileIds.Reset();
 	}
 }
 

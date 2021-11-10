@@ -46,6 +46,7 @@ public:
 	virtual void Initialize(const UWFCGridConfig* Config);
 
 	/** Return the total number of cells in this grid */
+	UFUNCTION(BlueprintPure)
 	virtual int32 GetNumCells() const { return 0; }
 
 	/** Return true if a cell index is valid */
@@ -55,6 +56,7 @@ public:
 	}
 
 	/** Return the number of possible directions, and therefore also neighbors, for a cell in the grid. */
+	UFUNCTION(BlueprintPure)
 	virtual int32 GetNumDirections() const { return 0; }
 
 	/** Return true if a direction is valid for a cell */
@@ -67,7 +69,10 @@ public:
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const { return INDEX_NONE; }
 
 	/** Return a rotated direction. */
-	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
+	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
+
+	/** Return a direction applying the inverse of the given rotation. */
+	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
 
 	/** Return the index of the cell that is one unit in a direction from another cell. */
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const { return INDEX_NONE; }

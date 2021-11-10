@@ -50,7 +50,7 @@ int32 UWFCGrid2D::GetOppositeDirection(FWFCGridDirection Direction) const
 	}
 }
 
-FWFCGridDirection UWFCGrid2D::GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const
+FWFCGridDirection UWFCGrid2D::RotateDirection(FWFCGridDirection Direction, int32 Rotation) const
 {
 	if (!IsValidDirection(Direction))
 	{
@@ -59,6 +59,13 @@ FWFCGridDirection UWFCGrid2D::GetRotatedDirection(FWFCGridDirection Direction, i
 	// rotation is CW, and the 2d directions are also CW {+X, +Y, -X, -Y},
 	// so add the rotation to the direction and get the remainder
 	return (Direction + Rotation) % 4;
+}
+
+FWFCGridDirection UWFCGrid2D::InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const
+{
+	// inverse the rotation, then rotate the direction
+	const int32 InvRotation = (4 - Rotation) % 4;
+	return RotateDirection(Direction, InvRotation);
 }
 
 FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const
@@ -84,4 +91,21 @@ FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
 	const int32 X = CellIndex % Dimensions.X;
 	const int32 Y = (CellIndex - X) / Dimensions.X;
 	return FIntPoint(X, Y);
+}
+
+FIntPoint UWFCGrid2D::GetDirectionVector(FWFCGridDirection Direction)
+{
+	switch (Direction)
+	{
+	case 0:
+		return FIntPoint(1, 0);
+	case 1:
+		return FIntPoint(0, 1);
+	case 2:
+		return FIntPoint(-1, 0);
+	case 3:
+		return FIntPoint(0, -1);
+	default:
+		return FIntPoint();
+	}
 }

@@ -31,14 +31,22 @@ void UWFCTileSet3DGenerator::GenerateTiles_Implementation(const UWFCTileSet* Til
 	// TODO: support pitch and roll rotations
 	constexpr int32 NumRotations = 4;
 
-	OutTiles.SetNum(TileSet->TileAssets.Num() * NumRotations);
-	int32 Idx = 0;
+	OutTiles.Reset();
 	for (const TObjectPtr<UWFCTileAsset>& TileAsset : TileSet->TileAssets)
 	{
-		for (int32 Rotation = 0; Rotation < NumRotations; ++Rotation)
+		if (UWFCTile3DAsset* Tile3DAsset = Cast<UWFCTile3DAsset>(TileAsset))
 		{
-			OutTiles[Idx] = FWFCTile(TileAsset.Get(), Rotation);
-			++Idx;
+			if (Tile3DAsset->bAllowRotations)
+			{
+				for (int32 Rotation = 0; Rotation < NumRotations; ++Rotation)
+				{
+					OutTiles.Add(FWFCTile(Tile3DAsset, Rotation));
+				}
+			}
+			else
+			{
+				OutTiles.Add(FWFCTile(Tile3DAsset, 0));
+			}
 		}
 	}
 }
@@ -62,6 +70,7 @@ void UWFCTileSet3DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 
 	// TODO: don't check adjacency for B -> A if A -> B has already been checked, change AddAdjacentTileMapping to include both
 
+	/*
 	// iterate over all tiles, comparing to all other tiles...
 	for (FWFCTileId TileIdA = 0; TileIdA < Generator->GetNumTiles(); ++TileIdA)
 	{
@@ -95,4 +104,5 @@ void UWFCTileSet3DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 			}
 		}
 	}
+	*/
 }

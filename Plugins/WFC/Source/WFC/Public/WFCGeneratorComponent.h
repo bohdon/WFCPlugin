@@ -55,13 +55,19 @@ public:
 	UFUNCTION(BlueprintPure)
 	EWFCGeneratorState GetState() const;
 
-	/** Return a selected tile by cell index */
+	/**
+	 * Return a selected tile id by cell index.
+	 * @see Model for retrieving tile objects.
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
-	void GetSelectedTile(int32 CellIndex, bool& bSuccess, FWFCTile& Tile) const;
+	void GetSelectedTileId(int32 CellIndex, bool& bSuccess, int32& TileId) const;
 
-	/** Return the selected tiles for every cell in the grid */
+	/**
+	 * Return the selected tile ids for every cell in the grid.
+	 * @see Model for retrieving tile objects.
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
-	void GetSelectedTiles(TArray<FWFCTile>& OutTiles) const;
+	void GetSelectedTileIds(TArray<int32>& TileIds) const;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCellSelectedDynDelegate, int32, CellIndex);
 

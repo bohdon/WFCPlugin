@@ -201,6 +201,15 @@ const FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex CellIndex) const
 	return Cells[CellIndex];
 }
 
+int32 UWFCGenerator::GetNumCellCandidates(int32 CellIndex) const
+{
+	if (IsValidCellIndex(CellIndex))
+	{
+		return GetCell(CellIndex).TileCandidates.Num();
+	}
+	return 0;
+}
+
 void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 {
 	if (GetCell(CellIndex).HasSelection())
