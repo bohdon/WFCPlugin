@@ -7,6 +7,11 @@
 #include "Core/WFCGrid.h"
 
 
+UWFCAdjacencyConstraint::UWFCAdjacencyConstraint()
+	: bIgnoreContradictionCells(true)
+{
+}
+
 void UWFCAdjacencyConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
@@ -56,6 +61,12 @@ bool UWFCAdjacencyConstraint::Next()
 		AdjacentCellDirsToCheck.RemoveAt(0);
 
 		const FWFCCell& ChangedCell = Generator->GetCell(CellDir.CellIndex);
+
+		if (bIgnoreContradictionCells && ChangedCell.HasNoCandidates())
+		{
+			// treat cells with no candidates as empty spaces
+			continue;
+		}
 
 		// find the cell in the direction to check
 		const FWFCCellIndex CellIndexToCheck = Grid->GetCellIndexInDirection(CellDir.CellIndex, CellDir.Direction);

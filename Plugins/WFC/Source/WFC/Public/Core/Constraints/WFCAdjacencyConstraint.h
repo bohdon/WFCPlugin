@@ -30,6 +30,15 @@ class WFC_API UWFCAdjacencyConstraint : public UWFCConstraint
 	GENERATED_BODY()
 
 public:
+	UWFCAdjacencyConstraint();
+
+	/**
+	 * When true, treat cells with no candidates as empty spaces and don't
+	 * use them to ban candidates from neighboring cells.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIgnoreContradictionCells;
+
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
 	virtual void NotifyCellChanged(FWFCCellIndex CellIndex) override;
 	virtual bool Next() override;
