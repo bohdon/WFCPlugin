@@ -102,6 +102,7 @@ void UWFCGenerator::Next()
 	{
 		if (Constraint->Next())
 		{
+			State = EWFCGeneratorState::InProgress;
 			return;
 		}
 	}

@@ -47,6 +47,8 @@ void UWFCTileSet2DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 	const UWFCGrid* Grid = Generator->GetGrid();
 	check(Grid != nullptr);
 
+	const int32 NumDirections = Grid->GetNumDirections();
+
 	// TODO: don't check adjacency for B -> A if A -> B has already been checked, change AddAdjacentTileMapping to include both
 
 	// iterate over all tiles, comparing to all other tiles...
@@ -58,12 +60,12 @@ void UWFCTileSet2DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 		{
 			FWFCTile TileB = Model->GetTile(TileIdB);
 
-			UWFCTile2dAsset* Tile2dA = Cast<UWFCTile2dAsset>(TileA.Object.Get());
-			UWFCTile2dAsset* Tile2dB = Cast<UWFCTile2dAsset>(TileB.Object.Get());
-			if (Tile2dA && Tile2dB)
+			UWFCTile2DAsset* Tile2DA = Cast<UWFCTile2DAsset>(TileA.Object.Get());
+			UWFCTile2DAsset* Tile2DB = Cast<UWFCTile2DAsset>(TileB.Object.Get());
+			if (Tile2DA && Tile2DB)
 			{
 				// for each direction, and check if socket type matches opposite direction on the other tile
-				for (FWFCGridDirection Direction = 0; Direction < Grid->GetNumDirections(); ++Direction)
+				for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 				{
 					// adjacency mappings represent 'incoming' directions,
 					// so the adjacency mappings for A here represent the direction B -> A
@@ -71,8 +73,8 @@ void UWFCTileSet2DGenerator::ConfigureAdjacencyConstraint(const UWFCModel* Model
 					const int32 BInvRotation = (4 - TileB.Rotation) % 4;
 					FWFCGridDirection AEdgeDirection = Grid->GetRotatedDirection(Grid->GetOppositeDirection(Direction), AInvRotation);
 					FWFCGridDirection BEdgeDirection = Grid->GetRotatedDirection(Direction, BInvRotation);
-					const int32 SocketTypeA = Tile2dA->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(AEdgeDirection)];
-					const int32 SocketTypeB = Tile2dB->EdgeSocketTypes[static_cast<EWFCTile2dEdge>(BEdgeDirection)];
+					const int32 SocketTypeA = Tile2DA->EdgeSocketTypes.FindRef(static_cast<EWFCTile2DEdge>(AEdgeDirection));
+					const int32 SocketTypeB = Tile2DB->EdgeSocketTypes.FindRef(static_cast<EWFCTile2DEdge>(BEdgeDirection));
 
 					if (SocketTypeA == SocketTypeB)
 					{

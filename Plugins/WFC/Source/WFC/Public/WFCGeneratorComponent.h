@@ -55,6 +55,10 @@ public:
 	UFUNCTION(BlueprintPure)
 	EWFCGeneratorState GetState() const;
 
+	/** Return a selected tile by cell index */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	void GetSelectedTile(int32 CellIndex, bool& bSuccess, FWFCTile& Tile) const;
+
 	/** Return the selected tiles for every cell in the grid */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTiles(TArray<FWFCTile>& OutTiles) const;

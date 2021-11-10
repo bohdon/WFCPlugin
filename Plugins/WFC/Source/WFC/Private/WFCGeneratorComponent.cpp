@@ -110,6 +110,22 @@ EWFCGeneratorState UWFCGeneratorComponent::GetState() const
 	return Generator ? Generator->State : EWFCGeneratorState::None;
 }
 
+void UWFCGeneratorComponent::GetSelectedTile(int32 CellIndex, bool& bSuccess, FWFCTile& Tile) const
+{
+	Tile = FWFCTile();
+	bSuccess = false;
+	if (Generator)
+	{
+		const FWFCCell& Cell = Generator->GetCell(CellIndex);
+		if (Cell.HasSelection())
+		{
+			const FWFCTileId TileId = Cell.GetSelectedTileId();
+			Tile = Model->GetTile(TileId);
+			bSuccess = true;
+		}
+	}
+}
+
 void UWFCGeneratorComponent::GetSelectedTiles(TArray<FWFCTile>& OutTiles) const
 {
 	if (Generator)

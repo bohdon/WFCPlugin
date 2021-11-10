@@ -42,7 +42,7 @@ public:
 	FIntVector Dimensions;
 
 	virtual int32 GetNumCells() const override;
-	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
+	FORCEINLINE virtual int32 GetNumDirections() const override { return 6; }
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
 	virtual FWFCGridDirection GetRotatedDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
