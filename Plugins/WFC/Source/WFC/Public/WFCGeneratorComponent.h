@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCTypes.h"
 #include "Components/ActorComponent.h"
+#include "Core/WFCTypes.h"
 #include "WFCGeneratorComponent.generated.h"
 
 class UWFCAsset;

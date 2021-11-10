@@ -4,12 +4,12 @@
 #include "WFCGeneratorComponent.h"
 
 #include "WFCAsset.h"
-#include "WFCGenerator.h"
-#include "WFCGrid.h"
-#include "WFCModel.h"
 #include "WFCModule.h"
 #include "WFCTileAsset.h"
 #include "WFCTileSetAsset.h"
+#include "Core/WFCGenerator.h"
+#include "Core/WFCGrid.h"
+#include "Core/WFCModel.h"
 
 
 UWFCGeneratorComponent::UWFCGeneratorComponent()

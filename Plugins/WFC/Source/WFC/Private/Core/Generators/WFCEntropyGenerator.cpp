@@ -1,7 +1,7 @@
 ﻿// Copyright Bohdon Sayre. All Rights Reserved.
 
 
-#include "Generators/WFCEntropyGenerator.h"
+#include "Core/Generators/WFCEntropyGenerator.h"
 
 
 FWFCCellIndex UWFCEntropyGenerator::SelectNextCellIndex()

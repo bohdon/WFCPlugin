@@ -3,7 +3,7 @@
 
 #include "WFCAsset.h"
 
-#include "Generators/WFCEntropyGenerator.h"
+#include "Core/Generators/WFCEntropyGenerator.h"
 
 
 UWFCAsset::UWFCAsset()

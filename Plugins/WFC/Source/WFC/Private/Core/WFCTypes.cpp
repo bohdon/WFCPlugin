@@ -1,7 +1,7 @@
 ﻿// Copyright Bohdon Sayre. All Rights Reserved.
 
 
-#include "WFCTypes.h"
+#include "Core/WFCTypes.h"
 
 
 bool FWFCCell::AddCandidate(FWFCTileId TileId)

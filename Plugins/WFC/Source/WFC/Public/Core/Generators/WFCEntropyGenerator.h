@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCGenerator.h"
+#include "Core/WFCGenerator.h"
 #include "WFCEntropyGenerator.generated.h"
 
 

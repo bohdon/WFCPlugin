@@ -1,11 +1,11 @@
 ﻿// Copyright Bohdon Sayre. All Rights Reserved.
 
 
-#include "WFCGenerator.h"
+#include "Core/WFCGenerator.h"
 
-#include "WFCGrid.h"
-#include "WFCModel.h"
 #include "WFCModule.h"
+#include "Core/WFCGrid.h"
+#include "Core/WFCModel.h"
 
 
 UWFCGenerator::UWFCGenerator()

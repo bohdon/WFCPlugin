@@ -1,9 +1,7 @@
 ﻿// Copyright Bohdon Sayre. All Rights Reserved.
 
 
-#include "WFCGrid.h"
-
-#include "WFCTypes.h"
+#include "Core/WFCGrid.h"
 
 
 UWFCGrid::UWFCGrid()

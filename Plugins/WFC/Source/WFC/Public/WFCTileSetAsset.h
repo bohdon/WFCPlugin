@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCTypes.h"
+#include "Core/WFCTypes.h"
 #include "Engine/DataAsset.h"
 #include "WFCTileSetAsset.generated.h"
 
