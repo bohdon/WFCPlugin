@@ -15,7 +15,7 @@
 
 FString FWFCModelTile2D::ToString() const
 {
-	return FString::Printf(TEXT("[%d]:%s.%d"), Id, *GetNameSafe(TileAsset.Get()), TileDefIndex);
+	return FString::Printf(TEXT("%s:%s.%d"), *Super::ToString(), *GetNameSafe(TileAsset.Get()), TileDefIndex);
 }
 
 UWFCTileGenerator2D::UWFCTileGenerator2D()
@@ -55,6 +55,7 @@ void UWFCTileGenerator2D::GenerateTiles()
 					const int32 TileDefIndex = X + (Y * TileAsset2D->Dimensions.X);
 
 					TSharedPtr<FWFCModelTile2D> Tile = MakeShared<FWFCModelTile2D>();
+					Tile->Weight = TileAsset->Weight;
 					Tile->TileAsset = TileAsset2D;
 					Tile->Rotation = Rotation;
 					Tile->TileDefIndex = TileDefIndex;

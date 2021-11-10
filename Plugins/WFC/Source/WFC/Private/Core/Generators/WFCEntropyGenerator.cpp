@@ -3,6 +3,8 @@
 
 #include "Core/Generators/WFCEntropyGenerator.h"
 
+#include "Core/WFCModel.h"
+
 
 FWFCCellIndex UWFCEntropyGenerator::SelectNextCellIndex()
 {
@@ -50,5 +52,28 @@ FWFCTileId UWFCEntropyGenerator::SelectNextTileForCell(FWFCCellIndex Index)
 		return INDEX_NONE;
 	}
 
-	return Cell.TileCandidates[FMath::RandHelper(Cell.TileCandidates.Num())];
+	// select a candidate, applying weighted probabilities
+	float TotalWeight = 0.f;
+	TArray<float> TileWeights;
+	for (const FWFCTileId& TileId : Cell.TileCandidates)
+	{
+		const float TileWeight = Config.Model->GetTileWeightUnchecked(TileId);
+		TileWeights.Add(TileWeight);
+		TotalWeight += TileWeight;
+	}
+
+	float Rand = FMath::FRand() * TotalWeight;
+	for (int32 Idx = 0; Idx < Cell.TileCandidates.Num(); ++Idx)
+	{
+		if (Rand >= TileWeights[Idx])
+		{
+			Rand -= TileWeights[Idx];
+		}
+		else
+		{
+			return Cell.TileCandidates[Idx];
+		}
+	}
+
+	return Cell.TileCandidates[0];
 }

@@ -21,7 +21,8 @@ struct FWFCModelTile
 	GENERATED_BODY()
 
 	FWFCModelTile()
-		: Id(INDEX_NONE)
+		: Id(INDEX_NONE),
+		  Weight(1.f)
 	{
 	}
 
@@ -33,7 +34,11 @@ struct FWFCModelTile
 	UPROPERTY(BlueprintReadOnly)
 	int32 Id;
 
-	virtual FString ToString() const { return FString::Printf(TEXT("[%d]"), Id); }
+	/** The probability weight of this tile */
+	UPROPERTY(BlueprintReadOnly)
+	float Weight;
+
+	virtual FString ToString() const { return FString::Printf(TEXT("[%d](W%0.2f)"), Id, Weight); }
 };
 
 
@@ -87,6 +92,9 @@ public:
 		return Cast<T>(TileDataRef.Get());
 	}
 
+	/** Return the weight of a tile. */
+	FORCEINLINE float GetTileWeightUnchecked(FWFCTileId TileId) const { return TileWeights[TileId]; }
+
 protected:
 	/** Weak reference to the tile data that was used to generate tiles. */
 	UPROPERTY(Transient)
@@ -94,6 +102,9 @@ protected:
 
 	/** All generated tiles. Array index is the same as the tile id. */
 	TArray<TSharedPtr<FWFCModelTile>> Tiles;
+
+	/** All tile weights, by tile id. */
+	TArray<float> TileWeights;
 
 	/** Return a tile reference by id cast to a type. */
 	template <typename T>

@@ -14,6 +14,13 @@ UCLASS(Abstract, BlueprintType, Blueprintable)
 class WFC_API UWFCTileAsset : public UDataAsset
 {
 	GENERATED_BODY()
+
+public:
+	UWFCTileAsset();
+
+	/** A value that determines how likely this tile is to be selected. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Weight;
 };
 
 

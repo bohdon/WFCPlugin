@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 
+class UWFCModel;
 class UWFCGrid;
 class UWFCGridConfig;
 class UWFCConstraint;
@@ -21,13 +22,11 @@ struct FWFCGeneratorConfig
 	GENERATED_BODY()
 
 	FWFCGeneratorConfig()
-		: NumTiles(0)
 	{
 	}
 
-	/** The total number of unique tile types. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 NumTiles;
+	TWeakObjectPtr<const UWFCModel> Model;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TWeakObjectPtr<const UWFCGridConfig> GridConfig;
@@ -67,7 +66,7 @@ public:
 
 	/** Return the total number of unique tile types. */
 	UFUNCTION(BlueprintPure)
-	FORCEINLINE int32 GetNumTiles() const { return Config.NumTiles; }
+	FORCEINLINE int32 GetNumTiles() const { return NumTiles; }
 
 	FORCEINLINE const UWFCGrid* GetGrid() const { return Grid; }
 
@@ -136,6 +135,9 @@ protected:
 	/** The constraints to apply, in order of priority, during generation. */
 	UPROPERTY(Transient)
 	TArray<UWFCConstraint*> Constraints;
+
+	/** The cached total number of available tiles. */
+	int32 NumTiles;
 
 	/** Array of all cells in the grid by cell index. */
 	TArray<FWFCCell> Cells;

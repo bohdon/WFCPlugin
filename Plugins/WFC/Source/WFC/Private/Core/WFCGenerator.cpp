@@ -6,6 +6,7 @@
 #include "WFCModule.h"
 #include "Core/WFCConstraint.h"
 #include "Core/WFCGrid.h"
+#include "Core/WFCModel.h"
 
 
 UWFCGenerator::UWFCGenerator()
@@ -18,6 +19,7 @@ void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 	if (!bIsInitialized)
 	{
 		Config = InConfig;
+		NumTiles = Config.Model->GetNumTiles();
 
 		InitializeGrid(Config.GridConfig.Get());
 		InitializeCells();

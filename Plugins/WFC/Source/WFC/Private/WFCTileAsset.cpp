@@ -4,6 +4,11 @@
 #include "WFCTileAsset.h"
 
 
+UWFCTileAsset::UWFCTileAsset()
+	: Weight(1.f)
+{
+}
+
 UWFCTile2DAsset::UWFCTile2DAsset()
 	: Dimensions(FIntPoint(1, 1)),
 	  bAllowRotation(true)

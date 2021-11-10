@@ -72,7 +72,7 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 	Generator->OnCellSelected.AddUObject(this, &UWFCGeneratorComponent::OnCellSelected);
 
 	FWFCGeneratorConfig Config;
-	Config.NumTiles = Model->GetNumTiles();
+	Config.Model = Model;
 	Config.GridConfig = WFCAsset->GridConfig;
 	Config.ConstraintClasses = WFCAsset->ConstraintClasses;
 
