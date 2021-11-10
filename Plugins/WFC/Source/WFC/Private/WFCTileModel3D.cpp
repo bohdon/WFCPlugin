@@ -83,8 +83,8 @@ bool UWFCTileModel3D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 {
 	const FWFCGridDirection InvDirection = Grid->GetOppositeDirection(Direction);
 
-	const UWFCTileAsset3D* Tile3DAssetA = Cast<UWFCTileAsset3D>(TileB.TileAsset.Get());
-	const UWFCTileAsset3D* Tile3DAssetB = Cast<UWFCTileAsset3D>(TileA.TileAsset.Get());
+	const UWFCTileAsset3D* Tile3DAssetA = Cast<UWFCTileAsset3D>(TileA.TileAsset.Get());
+	const UWFCTileAsset3D* Tile3DAssetB = Cast<UWFCTileAsset3D>(TileB.TileAsset.Get());
 
 	const FWFCTileDef3D& TileDefA = Tile3DAssetA->GetTileDefByIndex(TileA.TileDefIndex);
 	const FWFCTileDef3D& TileDefB = Tile3DAssetB->GetTileDefByIndex(TileB.TileDefIndex);

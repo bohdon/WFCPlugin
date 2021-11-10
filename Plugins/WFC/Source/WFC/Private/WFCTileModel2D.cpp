@@ -76,8 +76,8 @@ bool UWFCTileModel2D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 {
 	const FWFCGridDirection InvDirection = Grid->GetOppositeDirection(Direction);
 
-	const UWFCTileAsset2D* Tile2DAssetA = Cast<UWFCTileAsset2D>(TileB.TileAsset.Get());
-	const UWFCTileAsset2D* Tile2DAssetB = Cast<UWFCTileAsset2D>(TileA.TileAsset.Get());
+	const UWFCTileAsset2D* Tile2DAssetA = Cast<UWFCTileAsset2D>(TileA.TileAsset.Get());
+	const UWFCTileAsset2D* Tile2DAssetB = Cast<UWFCTileAsset2D>(TileB.TileAsset.Get());
 
 	const FWFCTileDef2D& TileDefA = Tile2DAssetA->GetTileDefByIndex(TileA.TileDefIndex);
 	const FWFCTileDef2D& TileDefB = Tile2DAssetB->GetTileDefByIndex(TileB.TileDefIndex);
