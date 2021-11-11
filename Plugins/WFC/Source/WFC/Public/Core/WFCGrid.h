@@ -66,14 +66,14 @@ public:
 	}
 
 	/** Return the direction that goes the opposite way of a direction. */
-	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const { return INDEX_NONE; }
+	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const;
 
 	/** Return a rotated direction. */
-	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
+	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const;
 
 	/** Return a direction applying the inverse of the given rotation. */
-	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const { return INDEX_NONE; }
+	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const;
 
 	/** Return the index of the cell that is one unit in a direction from another cell. */
-	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const { return INDEX_NONE; }
+	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const;
 };

@@ -28,3 +28,27 @@ UWFCGrid* UWFCGrid::NewGrid(UObject* Outer, const UWFCGridConfig* Config)
 void UWFCGrid::Initialize(const UWFCGridConfig* Config)
 {
 }
+
+FWFCGridDirection UWFCGrid::GetOppositeDirection(FWFCGridDirection Direction) const
+{
+	unimplemented();
+	return INDEX_NONE;
+}
+
+FWFCGridDirection UWFCGrid::RotateDirection(FWFCGridDirection Direction, int32 Rotation) const
+{
+	unimplemented();
+	return INDEX_NONE;
+}
+
+FWFCGridDirection UWFCGrid::InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const
+{
+	unimplemented();
+	return INDEX_NONE;
+}
+
+FWFCCellIndex UWFCGrid::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const
+{
+	unimplemented();
+	return INDEX_NONE;
+}

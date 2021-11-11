@@ -45,6 +45,7 @@ public:
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 6; }
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
 	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
+	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
 
 	/** Return the cell index for a grid location */

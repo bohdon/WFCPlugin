@@ -29,10 +29,10 @@ struct FWFCTileDef2D
 	FWFCTileDef2D()
 	{
 		EdgeSocketTypes = {
-			{EWFCTile2DEdge::XPos, -1},
-			{EWFCTile2DEdge::YPos, -1},
-			{EWFCTile2DEdge::XNeg, -1},
-			{EWFCTile2DEdge::YNeg, -1},
+			{EWFCTile2DEdge::XPos, 0},
+			{EWFCTile2DEdge::YPos, 0},
+			{EWFCTile2DEdge::XNeg, 0},
+			{EWFCTile2DEdge::YNeg, 0},
 		};
 	}
 
@@ -77,8 +77,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FWFCTileDef2D> TileDefs;
 
+	/** Return a tile def by location, as well as its index. */
 	UFUNCTION(BlueprintPure)
-	FWFCTileDef2D GetTileDefByLocation(FIntPoint Location) const;
+	FWFCTileDef2D GetTileDefByLocation(FIntPoint Location, int32& Index) const;
 
 	UFUNCTION(BlueprintPure)
 	FWFCTileDef2D GetTileDefByIndex(int32 Index) const;

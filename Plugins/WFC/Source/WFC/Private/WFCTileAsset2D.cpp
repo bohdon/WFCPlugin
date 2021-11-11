@@ -10,13 +10,15 @@ UWFCTileAsset2D::UWFCTileAsset2D()
 {
 }
 
-FWFCTileDef2D UWFCTileAsset2D::GetTileDefByLocation(FIntPoint Location) const
+FWFCTileDef2D UWFCTileAsset2D::GetTileDefByLocation(FIntPoint Location, int32& Index) const
 {
-	for (const FWFCTileDef2D& TileDef : TileDefs)
+	Index = INDEX_NONE;
+	for (int32 Idx = 0; Idx < TileDefs.Num(); ++Idx)
 	{
-		if (TileDef.Location == Location)
+		if (TileDefs[Idx].Location == Location)
 		{
-			return TileDef;
+			Index = Idx;
+			return TileDefs[Idx];
 		}
 	}
 	return FWFCTileDef2D();

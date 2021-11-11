@@ -46,9 +46,8 @@ void UWFCTileModel2D::GenerateTiles()
 			{
 				for (int32 Y = 0; Y < TileAsset2D->Dimensions.Y; ++Y)
 				{
-					FWFCTileDef2D Tile2DDef = TileAsset2D->GetTileDefByLocation(FIntPoint(X, Y));
-					// TODO: make util for this
-					const int32 TileDefIndex = X + (Y * TileAsset2D->Dimensions.X);
+					int32 TileDefIndex;
+					FWFCTileDef2D Tile2DDef = TileAsset2D->GetTileDefByLocation(FIntPoint(X, Y), TileDefIndex);
 
 					TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
 					Tile->Weight = TileAsset->Weight;
@@ -99,13 +98,13 @@ bool UWFCTileModel2D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 
 	// compare edge socket types
 	const int32 SocketTypeA = TileDefA.EdgeSocketTypes.FindRef(static_cast<EWFCTile2DEdge>(AEdgeDirection));
-	if (SocketTypeA == INDEX_NONE)
+	if (SocketTypeA <= 0)
 	{
 		return false;
 	}
 
 	const int32 SocketTypeB = TileDefB.EdgeSocketTypes.FindRef(static_cast<EWFCTile2DEdge>(BEdgeDirection));
-	if (SocketTypeB == INDEX_NONE)
+	if (SocketTypeB <= 0)
 	{
 		return false;
 	}

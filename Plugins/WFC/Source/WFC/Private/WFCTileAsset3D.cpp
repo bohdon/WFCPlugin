@@ -10,13 +10,15 @@ UWFCTileAsset3D::UWFCTileAsset3D()
 {
 }
 
-FWFCTileDef3D UWFCTileAsset3D::GetTileDefByLocation(FIntVector Location) const
+FWFCTileDef3D UWFCTileAsset3D::GetTileDefByLocation(FIntVector Location, int32& Index) const
 {
-	for (const FWFCTileDef3D& TileDef : TileDefs)
+	Index = INDEX_NONE;
+	for (int32 Idx = 0; Idx < TileDefs.Num(); ++Idx)
 	{
-		if (TileDef.Location == Location)
+		if (TileDefs[Idx].Location == Location)
 		{
-			return TileDef;
+			Index = Idx;
+			return TileDefs[Idx];
 		}
 	}
 	return FWFCTileDef3D();
