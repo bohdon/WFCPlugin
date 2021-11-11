@@ -36,18 +36,14 @@ void UWFCAssetModel::ConfigureAdjacencyConstraint(const UWFCGenerator* Generator
 		{
 			const FWFCModelAssetTile& TileB = GetTileRef<FWFCModelAssetTile>(TileIdB);
 
-			if (TileA.TileAsset.IsValid() && TileB.TileAsset.IsValid())
+			for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 			{
-				// for each direction, check if socket type matches opposite direction on the other tile
-				for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
+				if (CanTilesBeAdjacent(TileA, TileB, Direction, Grid))
 				{
-					if (CanTilesBeAdjacent(TileA, TileB, Direction, Grid))
-					{
-						UE_LOG(LogWFC, VeryVerbose, TEXT("Allowing adjacency: %s < Dir %d < %s"),
-						       *TileA.ToString(), Direction, *TileB.ToString());
+					UE_LOG(LogWFC, VeryVerbose, TEXT("Allowing adjacency: %s < Dir %s < %s"),
+					       *TileA.ToString(), *Grid->GetDirectionName(Direction), *TileB.ToString());
 
-						AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
-					}
+					AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
 				}
 			}
 		}

@@ -119,6 +119,8 @@ public:
 
 	FORCEINLINE const TArray<UWFCConstraint*>& GetConstraints() const { return Constraints; }
 
+	FString GetTileDebugString(int32 TileId) const;
+
 	/** Return the selected tiles for every cell in the grid */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;

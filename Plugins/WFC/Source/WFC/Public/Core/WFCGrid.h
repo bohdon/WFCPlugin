@@ -76,4 +76,12 @@ public:
 
 	/** Return the index of the cell that is one unit in a direction from another cell. */
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const;
+
+	/** Return a readable name for a direction for debugging purposes */
+	UFUNCTION(BlueprintPure)
+	virtual FString GetDirectionName(int32 Direction) const;
+
+	/** Return a readable name for a cell for debugging purposes */
+	UFUNCTION(BlueprintPure)
+	virtual FString GetCellName(int32 CellIndex) const;
 };

@@ -52,3 +52,13 @@ FWFCCellIndex UWFCGrid::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGri
 	unimplemented();
 	return INDEX_NONE;
 }
+
+FString UWFCGrid::GetDirectionName(int32 Direction) const
+{
+	return FString::FromInt(Direction);
+}
+
+FString UWFCGrid::GetCellName(int32 CellIndex) const
+{
+	return FString::FromInt(CellIndex);
+}

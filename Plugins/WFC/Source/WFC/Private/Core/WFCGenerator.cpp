@@ -183,6 +183,18 @@ void UWFCGenerator::Select(int32 CellIndex, int32 TileId)
 	}
 }
 
+FString UWFCGenerator::GetTileDebugString(int32 TileId) const
+{
+	if (Config.Model.IsValid())
+	{
+		if (const FWFCModelTile* ModelTile = Config.Model->GetTile(TileId))
+		{
+			return ModelTile->ToString();
+		}
+	}
+	return FString();
+}
+
 void UWFCGenerator::GetSelectedTileIds(TArray<int32>& OutTileIds) const
 {
 	OutTileIds.SetNum(NumCells);

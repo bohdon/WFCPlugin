@@ -32,21 +32,33 @@ int32 UWFCGrid2D::GetNumCells() const
 	return Dimensions.X * Dimensions.Y;
 }
 
+FString UWFCGrid2D::GetDirectionName(int32 Direction) const
+{
+	switch (Direction)
+	{
+	case 0: return FString(TEXT("+X"));
+	case 1: return FString(TEXT("+Y"));
+	case 2: return FString(TEXT("-X"));
+	case 3: return FString(TEXT("-Y"));
+	default: return FString(TEXT("Unknown"));
+	}
+}
+
+FString UWFCGrid2D::GetCellName(int32 CellIndex) const
+{
+	return GetLocationForCellIndex(CellIndex).ToString();
+}
+
 int32 UWFCGrid2D::GetOppositeDirection(FWFCGridDirection Direction) const
 {
 	// {0, 1, 2, 3} represents {+X, +Y, -X, -Y}
 	switch (Direction)
 	{
-	case 0:
-		return 2;
-	case 2:
-		return 0;
-	case 1:
-		return 3;
-	case 3:
-		return 1;
-	default:
-		return INDEX_NONE;
+	case 0: return 2;
+	case 2: return 0;
+	case 1: return 3;
+	case 3: return 1;
+	default: return INDEX_NONE;
 	}
 }
 
@@ -83,6 +95,11 @@ FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCG
 
 int32 UWFCGrid2D::GetCellIndexForLocation(FIntPoint GridLocation) const
 {
+	if (GridLocation.X < 0 || GridLocation.X >= Dimensions.X ||
+		GridLocation.Y < 0 || GridLocation.Y >= Dimensions.Y)
+	{
+		return INDEX_NONE;
+	}
 	return GridLocation.X + (GridLocation.Y * Dimensions.X);
 }
 

@@ -43,6 +43,8 @@ public:
 
 	virtual int32 GetNumCells() const override;
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 6; }
+	virtual FString GetDirectionName(int32 Direction) const override;
+	virtual FString GetCellName(int32 CellIndex) const override;
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
 	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;

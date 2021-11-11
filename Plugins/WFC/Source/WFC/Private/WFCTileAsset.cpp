@@ -6,7 +6,7 @@
 
 FString FWFCModelAssetTile::ToString() const
 {
-	return FString::Printf(TEXT("%s:%s.%d"), *Super::ToString(), *GetNameSafe(TileAsset.Get()), TileDefIndex);
+	return FString::Printf(TEXT("%s:%s.%d(R%d)"), *Super::ToString(), *GetNameSafe(TileAsset.Get()), TileDefIndex, Rotation);
 }
 
 UWFCTileAsset::UWFCTileAsset()

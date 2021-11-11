@@ -3,6 +3,7 @@
 
 #include "Core/Constraints/WFCAdjacencyConstraint.h"
 
+#include "WFCModule.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 
@@ -95,13 +96,17 @@ bool UWFCAdjacencyConstraint::Next()
 		}
 		if (TileIdsToBan.Num() > 0)
 		{
+			UE_LOG(LogWFC, VeryVerbose, TEXT("Banning %d tile(s) from Cell: %s after change in adjacent Cell: %s (Direction: %s)"),
+			       TileIdsToBan.Num(), *Grid->GetCellName(CellIndexToCheck),
+			       *Grid->GetCellName(CellDir.CellIndex), *Grid->GetDirectionName(CellDir.Direction));
+
 			Generator->BanMultiple(CellIndexToCheck, TileIdsToBan);
 		}
 
 		// this next call is finished if any cell was selected
 		if (CellToCheck.HasSelection())
 		{
-			return true;
+			// return true;
 		}
 	}
 	return false;

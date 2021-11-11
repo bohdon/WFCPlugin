@@ -32,6 +32,25 @@ int32 UWFCGrid3D::GetNumCells() const
 	return Dimensions.X * Dimensions.Y * Dimensions.Z;
 }
 
+FString UWFCGrid3D::GetDirectionName(int32 Direction) const
+{
+	switch (Direction)
+	{
+	case 0: return FString(TEXT("+X"));
+	case 1: return FString(TEXT("+Y"));
+	case 2: return FString(TEXT("-X"));
+	case 3: return FString(TEXT("-Y"));
+	case 4: return FString(TEXT("+Z"));
+	case 5: return FString(TEXT("-Z"));
+	default: return FString(TEXT("Unknown"));
+	}
+}
+
+FString UWFCGrid3D::GetCellName(int32 CellIndex) const
+{
+	return GetLocationForCellIndex(CellIndex).ToString();
+}
+
 int32 UWFCGrid3D::GetOppositeDirection(FWFCGridDirection Direction) const
 {
 	// {0, 1, 2, 3, 4, 5} represents {+X, +Y, -X, -Y, +Z, -Z}
@@ -93,6 +112,12 @@ FWFCCellIndex UWFCGrid3D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCG
 
 int32 UWFCGrid3D::GetCellIndexForLocation(FIntVector GridLocation) const
 {
+	if (GridLocation.X < 0 || GridLocation.X >= Dimensions.X ||
+		GridLocation.Y < 0 || GridLocation.Y >= Dimensions.Y ||
+		GridLocation.Z < 0 || GridLocation.Z >= Dimensions.Z)
+	{
+		return INDEX_NONE;
+	}
 	return GridLocation.X + (GridLocation.Y * Dimensions.X) + (GridLocation.Z * Dimensions.X * Dimensions.Y);
 }
 
