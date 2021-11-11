@@ -21,5 +21,5 @@ class WFC_API UWFCTileSet : public UDataAsset
 public:
 	/** The array of tile assets in this set */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<TObjectPtr<UWFCTileAsset>> TileAssets;
+	TArray<UWFCTileAsset*> TileAssets;
 };

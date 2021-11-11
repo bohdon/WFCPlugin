@@ -93,7 +93,7 @@ FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
 	return FIntPoint(X, Y);
 }
 
-FIntPoint UWFCGrid2D::GetDirectionVector(FWFCGridDirection Direction)
+FIntPoint UWFCGrid2D::GetDirectionVector(int32 Direction)
 {
 	switch (Direction)
 	{

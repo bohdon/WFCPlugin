@@ -56,5 +56,6 @@ public:
 	FIntVector GetLocationForCellIndex(int32 CellIndex) const;
 
 	/** Return the 2d vector for a direction */
-	static FIntVector GetDirectionVector(FWFCGridDirection Direction);
+	UFUNCTION(BlueprintPure)
+	static FIntVector GetDirectionVector(int32 Direction);
 };
