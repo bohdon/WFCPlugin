@@ -23,7 +23,8 @@ public:
 	UWFCTileModel3D();
 
 	virtual void GenerateTiles() override;
-	virtual void ConfigureGenerator(UWFCGenerator* Generator) override;
 	virtual bool CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB,
 	                                FWFCGridDirection Direction, const UWFCGrid* Grid) const override;
+	virtual bool CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
+	                                             const UWFCGrid* Grid) const override;
 };

@@ -69,14 +69,6 @@ void UWFCTileModel3D::GenerateTiles()
 	}
 }
 
-void UWFCTileModel3D::ConfigureGenerator(UWFCGenerator* Generator)
-{
-	if (UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>())
-	{
-		ConfigureAdjacencyConstraint(Generator, AdjacencyConstraint);
-	}
-}
-
 bool UWFCTileModel3D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB,
                                          FWFCGridDirection Direction, const UWFCGrid* Grid) const
 {
@@ -121,4 +113,27 @@ bool UWFCTileModel3D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 		return true;
 	}
 	return false;
+}
+
+bool UWFCTileModel3D::CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
+                                                      const UWFCGrid* Grid) const
+{
+	// to support large tiles, interior large tile edges are not allowed to be adjacent to the grid boundary
+	const UWFCTileAsset3D* Tile3DAsset = Cast<UWFCTileAsset3D>(Tile.TileAsset.Get());
+	if (Tile3DAsset)
+	{
+		const FWFCTileDef3D TileDef = Tile3DAsset->GetTileDefByIndex(Tile.TileDefIndex);
+		const FIntVector& Dimensions = Tile3DAsset->Dimensions;
+
+		// only exterior edges can be adjacent to boundary
+		const FWFCGridDirection LocalDirection = Grid->InverseRotateDirection(Direction, Tile.Rotation);
+		const FIntVector LocationInDirection = TileDef.Location + UWFCGrid3D::GetDirectionVector(LocalDirection);
+		if (!(LocationInDirection.X < 0 || LocationInDirection.X >= Dimensions.X ||
+			LocationInDirection.Y < 0 || LocationInDirection.Y >= Dimensions.Y ||
+			LocationInDirection.Z < 0 || LocationInDirection.Z >= Dimensions.Z))
+		{
+			return false;
+		}
+	}
+	return true;
 }

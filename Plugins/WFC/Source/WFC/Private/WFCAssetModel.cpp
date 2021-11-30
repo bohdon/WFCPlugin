@@ -7,6 +7,7 @@
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/Constraints/WFCAdjacencyConstraint.h"
+#include "Core/Constraints/WFCBoundaryConstraint.h"
 
 
 FWFCModelAssetTile UWFCAssetModel::GetTileById(int32 TileId) const
@@ -16,6 +17,18 @@ FWFCModelAssetTile UWFCAssetModel::GetTileById(int32 TileId) const
 		return *Tile;
 	}
 	return FWFCModelAssetTile();
+}
+
+void UWFCAssetModel::ConfigureGenerator(UWFCGenerator* Generator)
+{
+	if (UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>())
+	{
+		ConfigureAdjacencyConstraint(Generator, AdjacencyConstraint);
+	}
+	if (UWFCBoundaryConstraint* BoundaryConstraint = Generator->GetConstraint<UWFCBoundaryConstraint>())
+	{
+		ConfigureBoundaryConstraint(Generator, BoundaryConstraint);
+	}
 }
 
 void UWFCAssetModel::ConfigureAdjacencyConstraint(const UWFCGenerator* Generator, UWFCAdjacencyConstraint* AdjacencyConstraint) const
@@ -54,4 +67,34 @@ bool UWFCAssetModel::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const F
                                         const UWFCGrid* Grid) const
 {
 	return false;
+}
+
+void UWFCAssetModel::ConfigureBoundaryConstraint(const UWFCGenerator* Generator, UWFCBoundaryConstraint* BoundaryConstraint) const
+{
+	const UWFCGrid* Grid = Generator->GetGrid();
+	check(Grid != nullptr);
+
+	const int32 NumDirections = Grid->GetNumDirections();
+
+	for (FWFCTileId TileId = 0; TileId <= GetMaxTileId(); ++TileId)
+	{
+		const FWFCModelAssetTile& Tile = GetTileRef<FWFCModelAssetTile>(TileId);
+
+		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
+		{
+			if (!CanTileBeAdjacentToGridBoundary(Tile, Direction, Grid))
+			{
+				UE_LOG(LogWFC, VeryVerbose, TEXT("Prohibiting boundary adjacency: %s > Dir %s"),
+				       *Tile.ToString(), *Grid->GetDirectionName(Direction));
+
+				BoundaryConstraint->AddProhibitedAdjacentBoundaryMapping(TileId, Direction);
+			}
+		}
+	}
+}
+
+bool UWFCAssetModel::CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
+                                                      const UWFCGrid* Grid) const
+{
+	return true;
 }
