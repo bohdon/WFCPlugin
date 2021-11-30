@@ -9,7 +9,7 @@
 
 
 UWFCAdjacencyConstraint::UWFCAdjacencyConstraint()
-	: bIgnoreContradictionCells(true)
+	: bIgnoreContradictionCells(false)
 {
 }
 

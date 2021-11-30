@@ -104,14 +104,14 @@ bool UWFCTileModel3D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 	FWFCGridDirection BEdgeDirection = Grid->InverseRotateDirection(Direction, TileB.Rotation);
 
 	// compare edge socket types
-	const int32 SocketTypeA = TileDefA.EdgeSocketTypes.FindRef(static_cast<EWFCTile3DEdge>(AEdgeDirection));
-	if (SocketTypeA <= 0)
+	const FGameplayTag SocketTypeA = TileDefA.EdgeTypes.FindRef(static_cast<EWFCTile3DEdge>(AEdgeDirection));
+	if (!SocketTypeA.IsValid())
 	{
 		return false;
 	}
 
-	const int32 SocketTypeB = TileDefB.EdgeSocketTypes.FindRef(static_cast<EWFCTile3DEdge>(BEdgeDirection));
-	if (SocketTypeB <= 0)
+	const FGameplayTag SocketTypeB = TileDefB.EdgeTypes.FindRef(static_cast<EWFCTile3DEdge>(BEdgeDirection));
+	if (!SocketTypeB.IsValid())
 	{
 		return false;
 	}

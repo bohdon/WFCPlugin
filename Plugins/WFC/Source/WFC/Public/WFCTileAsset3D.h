@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "WFCTileAsset.h"
 #include "WFCTileAsset3D.generated.h"
 
@@ -17,6 +18,7 @@ enum class EWFCTile3DEdge : uint8
 	YNeg UMETA(DisplayName = "-Y"),
 	ZPos UMETA(DisplayName = "+Z"),
 	ZNeg UMETA(DisplayName = "-Z"),
+	MAX UMETA(Hidden),
 };
 
 
@@ -30,26 +32,41 @@ struct FWFCTileDef3D
 
 	FWFCTileDef3D()
 	{
-		EdgeSocketTypes = {
-			{EWFCTile3DEdge::XPos, 0},
-			{EWFCTile3DEdge::YPos, 0},
-			{EWFCTile3DEdge::XNeg, 0},
-			{EWFCTile3DEdge::YNeg, 0},
-			{EWFCTile3DEdge::ZPos, 0},
-			{EWFCTile3DEdge::ZNeg, 0},
+		EdgeTypes = {
+			{EWFCTile3DEdge::XPos, FGameplayTag::EmptyTag},
+			{EWFCTile3DEdge::YPos, FGameplayTag::EmptyTag},
+			{EWFCTile3DEdge::XNeg, FGameplayTag::EmptyTag},
+			{EWFCTile3DEdge::YNeg, FGameplayTag::EmptyTag},
+			{EWFCTile3DEdge::ZPos, FGameplayTag::EmptyTag},
+			{EWFCTile3DEdge::ZNeg, FGameplayTag::EmptyTag},
 		};
 	}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntVector Location;
 
-	/** The actor to spawn for this cell */
+	/** The actor to spawn for this tile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AActor> ActorClass;
 
-	/** The socket types for all edges of the tile */
+	/** The level to spawn for this tile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<EWFCTile3DEdge, int32> EdgeSocketTypes;
+	TSoftObjectPtr<UWorld> Level;
+
+	/** The types for all edges of the tile */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "WFC.EdgeType"))
+	TMap<EWFCTile3DEdge, FGameplayTag> EdgeTypes;
+
+	bool operator==(const FWFCTileDef3D& Other) const
+	{
+		return Other.Location == Location && Other.ActorClass == ActorClass &&
+			Other.Level == Level && Other.EdgeTypes.OrderIndependentCompareEqual(EdgeTypes);
+	}
+
+	bool operator!=(const FWFCTileDef3D& Other) const
+	{
+		return !(operator==(Other));
+	}
 };
 
 
@@ -86,4 +103,21 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	FWFCTileDef3D GetTileDefByIndex(int32 Index) const;
+};
+
+
+/**
+ * Shared tile set info for use with 3d tile assets.
+ */
+UCLASS(BlueprintType, Blueprintable)
+class WFC_API UWFCTileSet3DInfo : public UDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	UWFCTileSet3DInfo();
+
+	/** The dimensions of a single tile within this tile set. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector TileSize;
 };

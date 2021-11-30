@@ -28,3 +28,9 @@ FWFCTileDef3D UWFCTileAsset3D::GetTileDefByIndex(int32 Index) const
 {
 	return TileDefs.IsValidIndex(Index) ? TileDefs[Index] : FWFCTileDef3D();
 }
+
+
+UWFCTileSet3DInfo::UWFCTileSet3DInfo()
+	: TileSize(FVector(100.f, 100.f, 100.f))
+{
+}

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "WFCTileAsset.h"
 #include "WFCTileAsset2D.generated.h"
 
@@ -28,11 +29,11 @@ struct FWFCTileDef2D
 
 	FWFCTileDef2D()
 	{
-		EdgeSocketTypes = {
-			{EWFCTile2DEdge::XPos, 0},
-			{EWFCTile2DEdge::YPos, 0},
-			{EWFCTile2DEdge::XNeg, 0},
-			{EWFCTile2DEdge::YNeg, 0},
+		EdgeTypes = {
+			{EWFCTile2DEdge::XPos, FGameplayTag::EmptyTag},
+			{EWFCTile2DEdge::YPos, FGameplayTag::EmptyTag},
+			{EWFCTile2DEdge::XNeg, FGameplayTag::EmptyTag},
+			{EWFCTile2DEdge::YNeg, FGameplayTag::EmptyTag},
 		};
 	}
 
@@ -46,7 +47,7 @@ struct FWFCTileDef2D
 
 	/** The socket types for all edges of the tile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<EWFCTile2DEdge, int32> EdgeSocketTypes;
+	TMap<EWFCTile2DEdge, FGameplayTag> EdgeTypes;
 };
 
 

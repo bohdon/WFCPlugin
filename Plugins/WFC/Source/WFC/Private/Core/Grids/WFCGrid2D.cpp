@@ -46,7 +46,8 @@ FString UWFCGrid2D::GetDirectionName(int32 Direction) const
 
 FString UWFCGrid2D::GetCellName(int32 CellIndex) const
 {
-	return GetLocationForCellIndex(CellIndex).ToString();
+	const FIntPoint Location = GetLocationForCellIndex(CellIndex);
+	return FString::Printf(TEXT("%d,%d"), Location.X, Location.Y);
 }
 
 int32 UWFCGrid2D::GetOppositeDirection(FWFCGridDirection Direction) const
