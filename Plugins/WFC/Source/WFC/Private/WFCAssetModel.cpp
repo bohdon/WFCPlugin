@@ -68,6 +68,15 @@ void UWFCAssetModel::ConfigureGenerator(UWFCGenerator* Generator)
 	}
 }
 
+FString UWFCAssetModel::GetTileDebugString(FWFCTileId TileId) const
+{
+	if (const FWFCModelAssetTile* AssetTile = GetTile<FWFCModelAssetTile>(TileId))
+	{
+		return FString::Printf(TEXT("Tile %d (%s)"), TileId, *AssetTile->ToString());
+	}
+	return Super::GetTileDebugString(TileId);
+}
+
 void UWFCAssetModel::ConfigureAdjacencyConstraint(const UWFCGenerator* Generator, UWFCAdjacencyConstraint* AdjacencyConstraint) const
 {
 	SCOPE_LOG_TIME(TEXT("UWFCAssetModel::ConfigureAdjacencyConstraint"), nullptr);

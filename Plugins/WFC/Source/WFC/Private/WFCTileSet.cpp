@@ -8,24 +8,33 @@
 #include "UObject/ObjectSaveContext.h"
 
 
-float UWFCTileSet::GetTileWeight(const FWFCTileSetEntry& TileSetEntry) const
+// UWFCTileSetTagWeightsConfig
+// ---------------------------
+
+float UWFCTileSetTagWeightsConfig::GetTileWeight(const UWFCTileAsset* TileAsset) const
 {
-	if (!TileSetEntry.TileAsset)
+	if (!TileAsset)
 	{
 		return 0.0f;
 	}
-	for (const FWFCTileSetTagWeight& WeightRule : TagWeights)
+	const FWFCTileTagWeight* WeightRule = Weights.FindByPredicate([TileAsset](const FWFCTileTagWeight& WeightRule)
 	{
-		if (TileSetEntry.TileAsset->OwnedTags.HasTag(WeightRule.Tag))
-		{
-			UE_LOG(LogWFC, VeryVerbose, TEXT("Tile '%s' matches tag '%s', using tag weight: '%f'"),
-			       *TileSetEntry.TileAsset->GetName(), *WeightRule.Tag.ToString(), WeightRule.Weight);
+		return TileAsset->OwnedTags.HasTag(WeightRule.Tag);
+	});
 
-			return WeightRule.Weight;
-		}
+	if (WeightRule)
+	{
+		UE_LOG(LogWFC, VeryVerbose, TEXT("Tile '%s' matches tag '%s', using Weight: '%f'"),
+		       *TileAsset->GetName(), *WeightRule->Tag.ToString(), WeightRule->Weight);
+
+		return WeightRule->Weight;
 	}
-	return TileSetEntry.Weight;
+	return 1.f;
 }
+
+
+// UWFCTileSet
+// -----------
 
 void UWFCTileSet::PreSave(FObjectPreSaveContext SaveContext)
 {
@@ -34,15 +43,15 @@ void UWFCTileSet::PreSave(FObjectPreSaveContext SaveContext)
 	if (!SaveContext.IsProceduralSave())
 	{
 		// remove invalid entries
-		Tiles.RemoveAll([](const FWFCTileSetEntry& Tile)
+		TileAssets.RemoveAll([](const UWFCTileAsset* TileAsset)
 		{
-			return !IsValid(Tile.TileAsset);
+			return TileAsset == nullptr;
 		});
 
 		// sort tiles by name
-		Tiles.Sort([](const FWFCTileSetEntry& TileA, const FWFCTileSetEntry& TileB)
+		TileAssets.Sort([](const UWFCTileAsset& TileAssetA, const UWFCTileAsset& TileAssetB)
 		{
-			return TileA.TileAsset->GetName() < TileB.TileAsset->GetName();
+			return TileAssetA.GetName() < TileAssetB.GetName();
 		});
 	}
 }

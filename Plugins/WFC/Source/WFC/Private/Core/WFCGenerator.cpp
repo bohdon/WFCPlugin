@@ -164,9 +164,10 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	bool bDidApplyConstraints = false;
 	for (UWFCConstraint* Constraint : Constraints)
 	{
+		NumBansThisUpdate = 0;
 		if (Constraint->Next())
 		{
-			UE_LOG(LogWFC, VeryVerbose, TEXT("Applied constraint: %s"), *Constraint->GetName());
+			UE_LOG(LogWFC, VeryVerbose, TEXT("Applied constraint: %s, bans: %d"), *Constraint->GetName(), NumBansThisUpdate);
 			bDidApplyConstraints = true;
 			SetState(EWFCGeneratorState::InProgress);
 
@@ -204,7 +205,6 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	}
 
 	Select(CellIndex, TileId);
-	UE_LOG(LogWFC, VeryVerbose, TEXT("Selected tile for cell: %s (Tile: %d)"), *Grid->GetCellName(CellIndex), TileId);
 
 	SetState(EWFCGeneratorState::InProgress);
 }
@@ -213,6 +213,7 @@ void UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
 {
 	if (IsValidCellIndex(CellIndex))
 	{
+		++NumBansThisUpdate;
 		FWFCCell& Cell = GetCell(CellIndex);
 		if (Cell.RemoveCandidate(TileId))
 		{
@@ -231,6 +232,11 @@ void UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
 		for (const int32& TileId : TileIds)
 		{
 			bWasChanged |= Cell.RemoveCandidate(TileId);
+
+			if (bWasChanged)
+			{
+				++NumBansThisUpdate;
+			}
 		}
 
 		if (bWasChanged)
@@ -306,6 +312,10 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 	const bool bHasSelection = GetCell(CellIndex).HasSelection();
 	if (bHasSelection)
 	{
+		UE_LOG(LogWFC, VeryVerbose, TEXT("Selected %s for Cell %s"),
+		       *GetModel()->GetTileDebugString(GetCell(CellIndex).GetSelectedTileId()),
+		       *Grid->GetCellName(CellIndex));
+
 		INC_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected);
 		bDidSelectCellThisStep = true;
 		OnCellSelected.Broadcast(CellIndex);

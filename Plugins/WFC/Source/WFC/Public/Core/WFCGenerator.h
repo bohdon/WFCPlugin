@@ -176,6 +176,9 @@ protected:
 
 	bool bDidSelectCellThisStep;
 
+	/** Tracks how many bans occur during an update. */
+	int32 NumBansThisUpdate;
+
 	/** Create and initialize the grid. */
 	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);
 

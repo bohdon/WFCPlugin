@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCTileAsset.h"
+#include "WFCTileSet.h"
 #include "Core/WFCConstraint.h"
 #include "WFCCountConstraint.generated.h"
 
 
 /**
- * Configuration for a count constraint.
+ * Limit the max count of tiles.
  */
-UCLASS()
+UCLASS(Abstract)
 class WFC_API UWFCCountConstraintConfig : public UWFCConstraintConfig
 {
 	GENERATED_BODY()
@@ -61,28 +61,66 @@ public:
 	/** Set the maximum number of times that a set of tiles can be used. */
 	void AddTileGroupMaxCountMapping(const TArray<FWFCTileId>& TileIds, int32 MaxCount);
 
-protected:
-	/** Array of tile ids in each tile group. */
-	TArray<FWFCCountConstraintTileGroup> TileGroups;
+	/** Return the number of max count constraint groups that are defined. */
+	int32 GetNumMaxCountGroups() const { return TileGroupMaxCounts.Num(); }
 
-	/** Array of tile groups indexed by tile id for fast lookup. */
-	TArray<int32> TileIdGroups;
+protected:
+	/** Array of tile ids in each tile group, and their maximum count. */
+	TArray<FWFCCountConstraintTileGroup> TileGroupMaxCounts;
+
+	/** Map of tile groups indexed by tile id for fast lookup. */
+	TMap<int32, int32> TileIdsToGroups;
 
 	/** The number of times each tile group has had a tile selected. */
-	TArray<int32> TileGroupCounts;
+	TArray<int32> TileGroupCurrentCounts;
 
 	/** Tile groups that have reached their limit and should be removed during the next update. */
 	TArray<int32> TileGroupsToBan;
+
+	/** Tile groups have already been banned. */
+	TArray<int32> BannedGroups;
 };
 
 
-// Tile Asset Count Constraint
-// ---------------------------
+/** Defines a max count that should be applied to all tiles with a matching tag. */
+USTRUCT(BlueprintType)
+struct FWFCTileTagMaxCount
+{
+	GENERATED_BODY()
+
+	FWFCTileTagMaxCount()
+		: MaxCount(1)
+	{
+	}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag Tag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (UIMin = "0", UIMax = "10"))
+	int32 MaxCount;
+};
+
 
 /**
- * Configuration for a count constraint using tile assets.
+ * Defines a maximum count for tiles by tag.
  */
-UCLASS()
+UCLASS(DisplayName = "Tag Max Counts")
+class WFC_API UWFCTileSetTagMaxCountsConfig : public UWFCTileSetConfig
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "{Tag} = {MaxCount}"), Category = "TagMaxCounts")
+	TArray<FWFCTileTagMaxCount> MaxCounts;
+
+	int32 GetTileMaxCount(const UWFCTileAsset* TileAsset) const;
+};
+
+
+/**
+ * Limit the max count of tiles using a Tax Max Counts config defined in the tile set.
+ */
+UCLASS(DisplayName = "Tile Asset Max Count Constraint Config")
 class WFC_API UWFCTileAssetCountConstraintConfig : public UWFCCountConstraintConfig
 {
 	GENERATED_BODY()

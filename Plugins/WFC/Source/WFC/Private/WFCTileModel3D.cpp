@@ -9,7 +9,6 @@
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
-#include "Core/Constraints/WFCAdjacencyConstraint.h"
 #include "Core/Constraints/WFCBoundaryConstraint.h"
 #include "Core/Grids/WFCGrid3D.h"
 
@@ -28,10 +27,11 @@ void UWFCTileModel3D::GenerateTiles()
 		return;
 	}
 
-	for (const FWFCTileSetEntry& TileSetEntry : TileSet->Tiles)
+	const UWFCTileSetTagWeightsConfig* TagWeights = TileSet->GetConfig<UWFCTileSetTagWeightsConfig>();
+
+	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
 	{
-		TObjectPtr<UWFCTileAsset> TileAsset = TileSetEntry.TileAsset;
-		UWFCTileAsset3D* TileAsset3D = Cast<UWFCTileAsset3D>(TileAsset);
+		const UWFCTileAsset3D* TileAsset3D = Cast<UWFCTileAsset3D>(TileAsset);
 		if (!TileAsset3D)
 		{
 			// unsupported tile asset
@@ -58,7 +58,10 @@ void UWFCTileModel3D::GenerateTiles()
 						FWFCTileDef3D TileDef = TileAsset3D->GetTileDefByLocation(FIntVector(X, Y, Z), TileDefIndex);
 
 						TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
-						Tile->Weight = TileSet->GetTileWeight(TileSetEntry);
+						if (TagWeights)
+						{
+							Tile->Weight = TagWeights->GetTileWeight(TileAsset);
+						}
 						Tile->TileAsset = TileAsset3D;
 						Tile->Rotation = Rotation;
 						Tile->TileDefIndex = TileDefIndex;

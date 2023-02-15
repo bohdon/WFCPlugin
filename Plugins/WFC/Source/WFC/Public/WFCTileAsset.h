@@ -8,6 +8,8 @@
 #include "Engine/DataAsset.h"
 #include "WFCTileAsset.generated.h"
 
+class UWFCTileAsset;
+
 
 /**
  * A model tile that has a source asset, rotation,
@@ -30,7 +32,7 @@ struct FWFCModelAssetTile : public FWFCModelTile
 
 	/** The tile asset representing this tile */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TWeakObjectPtr<class UWFCTileAsset> TileAsset;
+	TWeakObjectPtr<const UWFCTileAsset> TileAsset;
 
 	/** The index of the tile def within the asset. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

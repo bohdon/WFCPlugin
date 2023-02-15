@@ -11,12 +11,13 @@ class UWFCGrid;
 
 
 /**
- * Configuration for an adjacency constraint.
+ * Require tiles placed next to the grid boundary to follow certain rules.
  */
-UCLASS()
+UCLASS(DisplayName = "Boundary Constraint Config")
 class WFC_API UWFCBoundaryConstraintConfig : public UWFCConstraintConfig
 {
 	GENERATED_BODY()
+
 public:
 	UWFCBoundaryConstraintConfig();
 
@@ -31,7 +32,7 @@ public:
 
 
 /**
- * Constrains prohibited tiles from being adjacent to grid boundaries.
+ * Require tiles placed next to the grid boundary to follow certain rules.
  * This is useful for enforcing that large tiles remain wholly inside the grid.
  */
 UCLASS()

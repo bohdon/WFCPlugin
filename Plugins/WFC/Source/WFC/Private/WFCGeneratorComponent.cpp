@@ -41,8 +41,9 @@ bool UWFCGeneratorComponent::Initialize()
 		return false;
 	}
 
-	if (WFCAsset->TileSet->Tiles.Num() == 0)
+	if (WFCAsset->TileSet->TileAssets.IsEmpty())
 	{
+		// TODO: move to asset verify, don't warn here
 		UE_LOG(LogWFC, Warning, TEXT("TileSet has no tiles: %s"), *WFCAsset->TileSet->GetName());
 		return false;
 	}

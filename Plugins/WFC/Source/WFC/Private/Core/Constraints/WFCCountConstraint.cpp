@@ -12,11 +12,17 @@ DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Count Constraint - Time (ms)"), STAT_WFCCou
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Count Constraint - Bans"), STAT_WFCCountConstraintNumBans, STATGROUP_WFC);
 
 
+// UWFCCountConstraintConfig
+// -------------------------
+
 TSubclassOf<UWFCConstraint> UWFCCountConstraintConfig::GetConstraintClass() const
 {
 	return UWFCCountConstraint::StaticClass();
 }
 
+
+// UWFCCountConstraint
+// -------------------
 
 void UWFCCountConstraint::Initialize(UWFCGenerator* InGenerator)
 {
@@ -31,9 +37,10 @@ void UWFCCountConstraint::Reset()
 {
 	Super::Reset();
 
-	TileGroupCounts.Reset(TileGroups.Num());
-	TileGroupCounts.SetNum(TileGroups.Num());
+	TileGroupCurrentCounts.Reset(TileGroupMaxCounts.Num());
+	TileGroupCurrentCounts.SetNum(TileGroupMaxCounts.Num());
 	TileGroupsToBan.Reset();
+	BannedGroups.Reset();
 
 	SET_FLOAT_STAT(STAT_WFCCountConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCCountConstraintNumBans, 0);
@@ -48,23 +55,20 @@ void UWFCCountConstraint::AddTileGroupMaxCountMapping(const TArray<FWFCTileId>& 
 		return;
 	}
 
-	const int32 GroupId = TileGroups.Num();
-
 	// add tile group and max count
-	TileGroups.Add(FWFCCountConstraintTileGroup(TileIds, MaxCount));
-	TileGroupCounts.SetNum(TileGroups.Num());
+	const int32 GroupId = TileGroupMaxCounts.Add(FWFCCountConstraintTileGroup(TileIds, MaxCount));
+	TileGroupCurrentCounts.SetNum(TileGroupMaxCounts.Num());
 
 	// cache tile id -> group id mappings
 	for (const FWFCTileId& TileId : TileIds)
 	{
-		if (TileIdGroups.Num() < TileId + 1)
-		{
-			TileIdGroups.SetNum(TileId + 1);
-		}
-		TileIdGroups[TileId] = GroupId;
+		TileIdsToGroups.Add(TileId, GroupId);
 	}
 
-	SET_DWORD_STAT(STAT_WFCCountConstraintMappings, TileGroups.Num());
+	UE_LOG(LogWFC, VeryVerbose, TEXT("UWFCCountConstraint: Setting Max Count of %d for %d tile(s)"),
+	       MaxCount, TileIds.Num());
+
+	SET_DWORD_STAT(STAT_WFCCountConstraintMappings, TileGroupMaxCounts.Num());
 }
 
 void UWFCCountConstraint::NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection)
@@ -73,13 +77,15 @@ void UWFCCountConstraint::NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSe
 	{
 		const FWFCCell& Cell = Generator->GetCell(CellIndex);
 		const FWFCTileId TileId = Cell.GetSelectedTileId();
-		const int32 TileGroupIndex = TileIdGroups.IsValidIndex(TileId) ? TileIdGroups[TileId] : INDEX_NONE;
-		if (TileGroupIndex != INDEX_NONE)
+		const int32 TileGroupIndex = TileIdsToGroups.Contains(TileId) ? TileIdsToGroups[TileId] : INDEX_NONE;
+		if (TileGroupIndex != INDEX_NONE && !BannedGroups.Contains(TileGroupIndex))
 		{
-			const FWFCCountConstraintTileGroup& TileGroup = TileGroups[TileGroupIndex];
-			TileGroupCounts[TileGroupIndex] += 1;
-			if (TileGroupCounts[TileGroupIndex] >= TileGroup.MaxCount)
+			const FWFCCountConstraintTileGroup& TileGroup = TileGroupMaxCounts[TileGroupIndex];
+			TileGroupCurrentCounts[TileGroupIndex] += 1;
+			if (TileGroupCurrentCounts[TileGroupIndex] >= TileGroup.MaxCount)
 			{
+				UE_LOG(LogWFC, VeryVerbose, TEXT("Tile %d selection reached Max Count of %d for group %d, banning next update."),
+				       TileId, TileGroup.MaxCount, TileGroupIndex);
 				TileGroupsToBan.AddUnique(TileGroupIndex);
 			}
 		}
@@ -100,10 +106,11 @@ bool UWFCCountConstraint::Next()
 		TArray<FWFCTileId> TileIdsToBan;
 		for (const int32 TileGroupIndex : TileGroupsToBan)
 		{
-			TileIdsToBan.Append(TileGroups[TileGroupIndex].TileIds);
+			TileIdsToBan.Append(TileGroupMaxCounts[TileGroupIndex].TileIds);
+			BannedGroups.AddUnique(TileGroupIndex);
 		}
 
-		UE_LOG(LogWFC, Verbose, TEXT("Banning %d tile(s) after reaching max count"), TileIdsToBan.Num());
+		UE_LOG(LogWFC, Verbose, TEXT("Banning %d tile ids(s) after reaching max count"), TileIdsToBan.Num());
 
 		// remove from all unselected cells
 		for (FWFCCellIndex CellIndex = 0; CellIndex < Generator->GetNumCells(); ++CellIndex)
@@ -126,8 +133,33 @@ bool UWFCCountConstraint::Next()
 }
 
 
-// Tile Asset Count Constraint
-// ---------------------------
+// UWFCTileSetMaxCountConfig
+// -------------------------
+
+int32 UWFCTileSetTagMaxCountsConfig::GetTileMaxCount(const UWFCTileAsset* TileAsset) const
+{
+	if (!TileAsset)
+	{
+		return 0;
+	}
+	const FWFCTileTagMaxCount* MaxCountRule = MaxCounts.FindByPredicate([TileAsset](const FWFCTileTagMaxCount& MaxCountRule)
+	{
+		return TileAsset->OwnedTags.HasTag(MaxCountRule.Tag);
+	});
+
+	if (MaxCountRule)
+	{
+		UE_LOG(LogWFC, VeryVerbose, TEXT("Tile '%s' matches tag '%s', using Max Count: '%d'"),
+		       *TileAsset->GetName(), *MaxCountRule->Tag.ToString(), MaxCountRule->MaxCount);
+
+		return MaxCountRule->MaxCount;
+	}
+	return 0;
+}
+
+
+// UWFCTileAssetCountConstraintConfig
+// ----------------------------------
 
 void UWFCTileAssetCountConstraintConfig::Configure(UWFCConstraint* Constraint) const
 {
@@ -144,16 +176,36 @@ void UWFCTileAssetCountConstraintConfig::Configure(UWFCConstraint* Constraint) c
 		return;
 	}
 
-	for (const FWFCTileSetEntry& TileSetEntry : TileSet->Tiles)
+	const UWFCTileSetTagMaxCountsConfig* MaxCounts = TileSet->GetConfig<UWFCTileSetTagMaxCountsConfig>();
+	if (!MaxCounts)
 	{
-		const UWFCTileAsset* TileAsset = TileSetEntry.TileAsset;
-		if (TileSetEntry.MaxCount > 0)
+		// no maximum counts config
+		return;
+	}
+
+	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+	{
+		const int32 TileMaxCount = MaxCounts->GetTileMaxCount(TileAsset);
+		if (TileMaxCount > 0)
 		{
 			const FWFCTileIdArray IdArray = Model->GetTileIdsForAsset(TileAsset);
-			if (IdArray.TileIds.Num() > 0)
+
+			// only apply the max count limitation to the tile at 0,0,0 within the asset,
+			// so that large tiles don't count against it multiple times.
+			TArray<FWFCTileId> OriginTileIds = IdArray.TileIds.FilterByPredicate([Model](const int32& TileId)
 			{
-				CountConstraint->AddTileGroupMaxCountMapping(IdArray.TileIds, TileSetEntry.MaxCount);
+				const FWFCModelAssetTile* AssetTile = Model->GetTile<FWFCModelAssetTile>(TileId);
+				check(AssetTile != nullptr);
+				return AssetTile->TileDefIndex == 0;
+			});
+
+			if (OriginTileIds.Num() > 0)
+			{
+				CountConstraint->AddTileGroupMaxCountMapping(OriginTileIds, TileMaxCount);
 			}
 		}
 	}
+
+	UE_LOG(LogWFC, Verbose, TEXT("UWFCTileAssetCountConstraintConfig configured %d max count mappings"),
+	       CountConstraint->GetNumMaxCountGroups());
 }

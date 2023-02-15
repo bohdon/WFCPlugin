@@ -35,3 +35,8 @@ FWFCModelTile* UWFCModel::GetTile(FWFCTileId TileId) const
 {
 	return Tiles.IsValidIndex(TileId) ? Tiles[TileId].Get() : nullptr;
 }
+
+FString UWFCModel::GetTileDebugString(FWFCTileId TileId) const
+{
+	return FString::Printf(TEXT("Tile %d"), TileId);
+}

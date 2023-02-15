@@ -95,7 +95,7 @@ struct FWFCFixedTileConstraint3DEntry
 /**
  * Configuration for a 3d fixed tile constraint.
  */
-UCLASS()
+UCLASS(DisplayName = "Fixed Constraint Config (Tile Asset 3D)")
 class WFC_API UWFCFixedTile3DConstraintConfig : public UWFCFixedTileConstraintConfig
 {
 	GENERATED_BODY()

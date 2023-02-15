@@ -9,7 +9,6 @@
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
-#include "Core/Constraints/WFCAdjacencyConstraint.h"
 #include "Core/Constraints/WFCBoundaryConstraint.h"
 #include "Core/Grids/WFCGrid2D.h"
 
@@ -28,10 +27,11 @@ void UWFCTileModel2D::GenerateTiles()
 		return;
 	}
 
-	for (const FWFCTileSetEntry& TileSetEntry : TileSet->Tiles)
+	const UWFCTileSetTagWeightsConfig* TagWeights = TileSet->GetConfig<UWFCTileSetTagWeightsConfig>();
+
+	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
 	{
-		const TObjectPtr<UWFCTileAsset> TileAsset = TileSetEntry.TileAsset;
-		UWFCTileAsset2D* TileAsset2D = Cast<UWFCTileAsset2D>(TileAsset);
+		const UWFCTileAsset2D* TileAsset2D = Cast<UWFCTileAsset2D>(TileAsset);
 		if (!TileAsset2D)
 		{
 			// unsupported tile asset
@@ -40,7 +40,7 @@ void UWFCTileModel2D::GenerateTiles()
 
 		const int32 NumRotations = TileAsset2D->bAllowRotation ? 4 : 1;
 
-		// for each possible tile (asset) rotation...
+		// for each possible tile asset rotation...
 		for (int32 Rotation = 0; Rotation < NumRotations; ++Rotation)
 		{
 			// iterate all tiles of the asset
@@ -52,7 +52,10 @@ void UWFCTileModel2D::GenerateTiles()
 					FWFCTileDef2D Tile2DDef = TileAsset2D->GetTileDefByLocation(FIntPoint(X, Y), TileDefIndex);
 
 					TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
-					Tile->Weight = TileSet->GetTileWeight(TileSetEntry);
+					if (TagWeights)
+					{
+						Tile->Weight = TagWeights->GetTileWeight(TileAsset);
+					}
 					Tile->TileAsset = TileAsset2D;
 					Tile->Rotation = Rotation;
 					Tile->TileDefIndex = TileDefIndex;

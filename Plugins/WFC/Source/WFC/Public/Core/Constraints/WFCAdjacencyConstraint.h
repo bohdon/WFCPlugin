@@ -21,9 +21,9 @@ struct FWFCAdjacentTileMapping
 
 
 /**
- * Configuration for an adjacency constraint.
+ * Require tiles placed next to each other to follow adjacency rules.
  */
-UCLASS()
+UCLASS(DisplayName = "Adjacency Constraint Config")
 class WFC_API UWFCAdjacencyConstraintConfig : public UWFCConstraintConfig
 {
 	GENERATED_BODY()

@@ -12,11 +12,11 @@ class UWFCTileAsset;
 
 /** Defines a tile weight that should be applied to all tiles with a matching tag. */
 USTRUCT(BlueprintType)
-struct FWFCTileSetTagWeight
+struct FWFCTileTagWeight
 {
 	GENERATED_BODY()
 
-	FWFCTileSetTagWeight()
+	FWFCTileTagWeight()
 		: Weight(1.0f)
 	{
 	}
@@ -28,30 +28,35 @@ struct FWFCTileSetTagWeight
 	float Weight;
 };
 
+/**
+ * Base class for a configuration defined in a tile set that can be
+ * used by the generator or constraints.
+ */
+UCLASS(Abstract, DefaultToInstanced, EditInlineNew)
+class UWFCTileSetConfig : public UObject
+{
+	GENERATED_BODY()
+};
 
-USTRUCT(BlueprintType)
-struct FWFCTileSetEntry
+
+/**
+ * Defines selection probability weights for tiles by tag. */
+UCLASS(DisplayName = "Tag Weights")
+class UWFCTileSetTagWeightsConfig : public UWFCTileSetConfig
 {
 	GENERATED_BODY()
 
-	FWFCTileSetEntry()
-		: TileAsset(nullptr),
-		  Weight(1.0f),
-		  MaxCount(-1)
-	{
-	}
+public:
+	/**
+	 * Weights that should be applied to any tiles with matching tags.
+	 * The first matching tag weight will be used if a tile matches multiple tags.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "{Tag} = {Weight}"), Category = "TagWeights")
+	TArray<FWFCTileTagWeight> Weights;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UWFCTileAsset> TileAsset;
-
-	/** A value that determines how likely this tile is to be selected. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (UIMin = "0", UIMax = "10"))
-	float Weight;
-
-	/** If > 0, the maximum amount of times this tile can be selected. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 MaxCount;
+	float GetTileWeight(const UWFCTileAsset* TileAsset) const;
 };
+
 
 /**
  * A set of assets for generating tiles in a model.
@@ -67,14 +72,26 @@ public:
 	 * Weights that should be applied to any tiles with matching tags.
 	 * The first matching tag weight will be used if a tile matches multiple tags.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "{Tag} = {Weight}"))
-	TArray<FWFCTileSetTagWeight> TagWeights;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+	TArray<TObjectPtr<UWFCTileSetConfig>> Configs;
 
 	/** The array of tile entries in this set */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "{TileAsset} (Weight: {Weight}, Max: {MaxCount})"))
-	TArray<FWFCTileSetEntry> Tiles;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<TObjectPtr<UWFCTileAsset>> TileAssets;
 
-	float GetTileWeight(const FWFCTileSetEntry& TileSetEntry) const;
+	/** Return a config by class, or nullptr if it does not exist. */
+	template <class T>
+	T* GetConfig() const
+	{
+		for (UWFCTileSetConfig* Config : Configs)
+		{
+			if (Config->IsA<T>())
+			{
+				return Cast<T>(Config);
+			}
+		}
+		return nullptr;
+	}
 
 	virtual void PreSave(FObjectPreSaveContext SaveContext) override;
 };

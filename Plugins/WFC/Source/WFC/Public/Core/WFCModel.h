@@ -50,7 +50,7 @@ public:
 	template <typename T>
 	T* GetTile(FWFCTileId TileId) const
 	{
-		return (T*)GetTile(TileId);
+		return static_cast<T*>(GetTile(TileId));
 	}
 
 	/** Return the tile data object cast to a type. */
@@ -62,6 +62,9 @@ public:
 
 	/** Return the weight of a tile. */
 	FORCEINLINE float GetTileWeightUnchecked(FWFCTileId TileId) const { return TileWeights[TileId]; }
+
+	/** Return a debug string representing a tile id. */
+	virtual FString GetTileDebugString(FWFCTileId TileId) const;
 
 protected:
 	/** Weak reference to the tile data that was used to generate tiles. */

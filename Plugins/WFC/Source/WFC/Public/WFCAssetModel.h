@@ -39,6 +39,8 @@ public:
 
 	virtual void ConfigureGenerator(UWFCGenerator* Generator) override;
 
+	virtual FString GetTileDebugString(FWFCTileId TileId) const override;
+
 protected:
 	/** Map of all tile ids indexed by tile asset */
 	UPROPERTY(Transient)
