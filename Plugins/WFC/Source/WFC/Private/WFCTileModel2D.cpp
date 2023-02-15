@@ -10,6 +10,7 @@
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
 #include "Core/Constraints/WFCAdjacencyConstraint.h"
+#include "Core/Constraints/WFCBoundaryConstraint.h"
 #include "Core/Grids/WFCGrid2D.h"
 
 
@@ -19,7 +20,7 @@ UWFCTileModel2D::UWFCTileModel2D()
 
 void UWFCTileModel2D::GenerateTiles()
 {
-	const UWFCTileSet* TileSet = GetTileData<UWFCTileSet>();
+	const UWFCTileSet* TileSet = GetAssetTileSet();
 	if (!TileSet)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("UWFCTileGenerator2D::GenerateTiles, expected a WFCTileSet, got %s"),
@@ -27,8 +28,9 @@ void UWFCTileModel2D::GenerateTiles()
 		return;
 	}
 
-	for (const TObjectPtr<UWFCTileAsset>& TileAsset : TileSet->TileAssets)
+	for (const FWFCTileSetEntry& TileSetEntry : TileSet->Tiles)
 	{
+		const TObjectPtr<UWFCTileAsset> TileAsset = TileSetEntry.TileAsset;
 		UWFCTileAsset2D* TileAsset2D = Cast<UWFCTileAsset2D>(TileAsset);
 		if (!TileAsset2D)
 		{
@@ -50,12 +52,12 @@ void UWFCTileModel2D::GenerateTiles()
 					FWFCTileDef2D Tile2DDef = TileAsset2D->GetTileDefByLocation(FIntPoint(X, Y), TileDefIndex);
 
 					TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
-					Tile->Weight = TileAsset->Weight;
+					Tile->Weight = TileSet->GetTileWeight(TileSetEntry);
 					Tile->TileAsset = TileAsset2D;
 					Tile->Rotation = Rotation;
 					Tile->TileDefIndex = TileDefIndex;
 
-					AddTile(Tile);
+					AddTileFromAsset(TileAsset, Tile);
 				}
 			}
 		}
@@ -109,17 +111,30 @@ bool UWFCTileModel2D::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const 
 }
 
 bool UWFCTileModel2D::CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
-                                                      const UWFCGrid* Grid) const
+                                                      const UWFCGrid* Grid, const UWFCGenerator* Generator) const
 {
+	const UWFCBoundaryConstraint* BoundaryConstraint = Generator->GetConstraint<UWFCBoundaryConstraint>();
+
 	// to support large tiles, interior large tile edges are not allowed to be adjacent to the grid boundary
 	const UWFCTileAsset2D* Tile2DAsset = Cast<UWFCTileAsset2D>(Tile.TileAsset.Get());
 	if (Tile2DAsset)
 	{
 		const FWFCTileDef2D TileDef = Tile2DAsset->GetTileDefByIndex(Tile.TileDefIndex);
 		const FIntPoint& Dimensions = Tile2DAsset->Dimensions;
+		const FWFCGridDirection LocalDirection = Grid->InverseRotateDirection(Direction, Tile.Rotation);
+
+		// check edge type
+		if (BoundaryConstraint)
+		{
+			const FGameplayTag EdgeType = TileDef.EdgeTypes.FindRef(static_cast<EWFCTile2DEdge>(LocalDirection));
+			const FGameplayTagContainer EdgeTypeTags(EdgeType);
+			if (!BoundaryConstraint->EdgeTypeQuery.IsEmpty() && !BoundaryConstraint->EdgeTypeQuery.Matches(EdgeTypeTags))
+			{
+				return false;
+			}
+		}
 
 		// only exterior edges can be adjacent to boundary
-		const FWFCGridDirection LocalDirection = Grid->InverseRotateDirection(Direction, Tile.Rotation);
 		const FIntPoint LocationInDirection = TileDef.Location + UWFCGrid2D::GetDirectionVector(LocalDirection);
 		if (!(LocationInDirection.X < 0 || LocationInDirection.X >= Dimensions.X ||
 			LocationInDirection.Y < 0 || LocationInDirection.Y >= Dimensions.Y))

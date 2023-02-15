@@ -8,10 +8,24 @@
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
 
+DECLARE_CYCLE_STAT(TEXT("WFCGenerator Next"), STAT_WFCGeneratorNext, STATGROUP_WFC);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Cells"), STAT_WFCGeneratorNumCells, STATGROUP_WFC);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Tiles"), STAT_WFCGeneratorNumTiles, STATGROUP_WFC);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Cells Selected"), STAT_WFCGeneratorNumCellsSelected, STATGROUP_WFC);
+
 
 UWFCGenerator::UWFCGenerator()
 	: State(EWFCGeneratorState::None)
 {
+}
+
+void UWFCGenerator::SetState(EWFCGeneratorState NewState)
+{
+	if (State != NewState)
+	{
+		State = NewState;
+		OnStateChanged.Broadcast(State);
+	}
 }
 
 void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
@@ -19,11 +33,15 @@ void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 	if (!bIsInitialized)
 	{
 		Config = InConfig;
+
 		NumTiles = Config.Model->GetNumTiles();
+		SET_DWORD_STAT(STAT_WFCGeneratorNumTiles, NumTiles);
 
 		InitializeGrid(Config.GridConfig.Get());
+
 		InitializeCells();
-		InitializeConstraints(Config.ConstraintClasses);
+
+		InitializeConstraints();
 
 		State = EWFCGeneratorState::InProgress;
 
@@ -38,15 +56,34 @@ void UWFCGenerator::InitializeGrid(const UWFCGridConfig* GridConfig)
 	check(Grid != nullptr);
 }
 
-void UWFCGenerator::InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses)
+void UWFCGenerator::InitializeConstraints()
 {
+	// map of which configs should be used to initialize each constraint
+	TMap<UWFCConstraint*, UWFCConstraintConfig*> ConstraintConfigMap;
+
 	Constraints.Reset();
-	for (TSubclassOf<UWFCConstraint> ConstraintClass : ConstraintClasses)
+	for (const TWeakObjectPtr<UWFCConstraintConfig>& ConstraintConfig : Config.ConstraintConfigs)
 	{
+		if (!ConstraintConfig.IsValid())
+		{
+			UE_LOG(LogWFC, Warning, TEXT("Found invalid constraint config during InitializeConstraints"));
+			continue;
+		}
+
+		// determine which constraint class to create
+		const TSubclassOf<UWFCConstraint> ConstraintClass = ConstraintConfig->GetConstraintClass();
+		if (!ConstraintClass)
+		{
+			UE_LOG(LogWFC, Warning, TEXT("Failed to get constraint class from config: %s"), *GetNameSafe(ConstraintConfig.Get()));
+			continue;
+		}
+
+		// create the new constraint object
 		UWFCConstraint* Constraint = NewObject<UWFCConstraint>(this, ConstraintClass);
 		if (Constraint)
 		{
 			Constraints.Add(Constraint);
+			ConstraintConfigMap.Add(Constraint, ConstraintConfig.Get());
 		}
 	}
 
@@ -54,6 +91,12 @@ void UWFCGenerator::InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> Co
 	for (UWFCConstraint* Constraint : Constraints)
 	{
 		Constraint->Initialize(this);
+
+		// allow the config to configure the initialized constraint
+		UWFCConstraintConfig* ConstraintConfig = ConstraintConfigMap.FindRef(Constraint);
+		check(ConstraintConfig != nullptr);
+
+		ConstraintConfig->Configure(Constraint);
 	}
 }
 
@@ -75,6 +118,19 @@ void UWFCGenerator::InitializeCells()
 	{
 		Cells[Idx].TileCandidates = AllTileCandidates;
 	}
+
+	SET_DWORD_STAT(STAT_WFCGeneratorNumCells, NumCells);
+	SET_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected, 0);
+}
+
+void UWFCGenerator::Reset()
+{
+	InitializeCells();
+
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		Constraint->Reset();
+	}
 }
 
 void UWFCGenerator::Run(int32 StepLimit)
@@ -84,6 +140,8 @@ void UWFCGenerator::Run(int32 StepLimit)
 		UE_LOG(LogWFC, Warning, TEXT("Initialize must be called before Run on a WFCGenerator"));
 		return;
 	}
+
+	SCOPE_LOG_TIME(TEXT("UWFCGenerator::Run"), nullptr);
 
 	for (int32 Step = 0; Step < StepLimit; ++Step)
 	{
@@ -97,16 +155,32 @@ void UWFCGenerator::Run(int32 StepLimit)
 	}
 }
 
-void UWFCGenerator::Next()
+void UWFCGenerator::Next(bool bBreakAfterConstraints)
 {
-	// update all constraints, which may lead to cell selection 
+	SCOPE_CYCLE_COUNTER(STAT_WFCGeneratorNext);
+	bDidSelectCellThisStep = false;
+
+	// update all constraints, which may lead to cell selection
+	bool bDidApplyConstraints = false;
 	for (UWFCConstraint* Constraint : Constraints)
 	{
 		if (Constraint->Next())
 		{
-			State = EWFCGeneratorState::InProgress;
-			return;
+			UE_LOG(LogWFC, VeryVerbose, TEXT("Applied constraint: %s"), *Constraint->GetName());
+			bDidApplyConstraints = true;
+			SetState(EWFCGeneratorState::InProgress);
+
+			if (bDidSelectCellThisStep)
+			{
+				// stop immediately if the constraint caused a cell selection
+				return;
+			}
 		}
+	}
+
+	if (bBreakAfterConstraints && bDidApplyConstraints)
+	{
+		return;
 	}
 
 	// select a cell to observe
@@ -114,7 +188,8 @@ void UWFCGenerator::Next()
 
 	if (CellIndex == INDEX_NONE)
 	{
-		State = EWFCGeneratorState::Error;
+		UE_LOG(LogWFC, Verbose, TEXT("Failed to select a cell"));
+		SetState(EWFCGeneratorState::Error);
 		return;
 	}
 
@@ -123,13 +198,15 @@ void UWFCGenerator::Next()
 
 	if (TileId == INDEX_NONE)
 	{
-		State = EWFCGeneratorState::Error;
+		UE_LOG(LogWFC, Verbose, TEXT("Failed to select a tile"));
+		SetState(EWFCGeneratorState::Error);
 		return;
 	}
 
 	Select(CellIndex, TileId);
+	UE_LOG(LogWFC, VeryVerbose, TEXT("Selected tile for cell: %s (Tile: %d)"), *Grid->GetCellName(CellIndex), TileId);
 
-	State = EWFCGeneratorState::InProgress;
+	SetState(EWFCGeneratorState::InProgress);
 }
 
 void UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
@@ -226,14 +303,17 @@ int32 UWFCGenerator::GetNumCellCandidates(int32 CellIndex) const
 
 void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 {
-	if (GetCell(CellIndex).HasSelection())
+	const bool bHasSelection = GetCell(CellIndex).HasSelection();
+	if (bHasSelection)
 	{
+		INC_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected);
+		bDidSelectCellThisStep = true;
 		OnCellSelected.Broadcast(CellIndex);
 	}
 
 	for (UWFCConstraint* Constraint : Constraints)
 	{
-		Constraint->NotifyCellChanged(CellIndex);
+		Constraint->NotifyCellChanged(CellIndex, bHasSelection);
 	}
 }
 

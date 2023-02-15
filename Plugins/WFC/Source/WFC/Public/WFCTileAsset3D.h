@@ -31,6 +31,7 @@ struct FWFCTileDef3D
 	GENERATED_BODY()
 
 	FWFCTileDef3D()
+		: Location(FIntVector::ZeroValue)
 	{
 		EdgeTypes = {
 			{EWFCTile3DEdge::XPos, FGameplayTag::EmptyTag},
@@ -94,7 +95,7 @@ public:
 	bool bAllowRotation;
 
 	/** The individual tiles that make up this group of tiles. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "Location"))
 	TArray<FWFCTileDef3D> TileDefs;
 
 	/** Return a tile def by location, as well as its index */

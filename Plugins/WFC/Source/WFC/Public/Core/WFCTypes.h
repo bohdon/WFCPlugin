@@ -16,6 +16,21 @@ typedef int32 FWFCCellIndex;
 typedef int32 FWFCTileId;
 
 
+/** An array of tile ids */
+USTRUCT(BlueprintType)
+struct FWFCTileIdArray
+{
+	GENERATED_BODY()
+
+	FWFCTileIdArray()
+	{
+	}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<int32> TileIds;
+};
+
+
 UENUM(BlueprintType)
 enum class EWFCGeneratorState : uint8
 {

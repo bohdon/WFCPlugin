@@ -3,16 +3,20 @@
 
 #include "Core/Grids/WFCGrid3D.h"
 
+#include "DrawDebugHelpers.h"
+
 
 UWFCGrid3DConfig::UWFCGrid3DConfig()
-	: Dimensions(FIntVector(10, 10, 10))
+	: Dimensions(FIntVector(10, 10, 10)),
+	  CellSize(FVector(100.f, 100.f, 100.f))
 {
 	GridClass = UWFCGrid3D::StaticClass();
 }
 
 
 UWFCGrid3D::UWFCGrid3D()
-	: Dimensions(FIntVector(10, 10, 10))
+	: Dimensions(FIntVector(10, 10, 10)),
+	  CellSize(FVector(100.f, 100.f, 100.f))
 {
 	// TODO: set default array of direction objects
 }
@@ -24,7 +28,9 @@ void UWFCGrid3D::Initialize(const UWFCGridConfig* Config)
 	const UWFCGrid3DConfig* Config3D = Cast<UWFCGrid3DConfig>(Config);
 	check(Config3D != nullptr);
 
+	// TODO: flip this, let config configure the grid so configs can be subclassed more easily
 	Dimensions = Config3D->Dimensions;
+	CellSize = Config3D->CellSize;
 }
 
 int32 UWFCGrid3D::GetNumCells() const
@@ -151,4 +157,20 @@ FIntVector UWFCGrid3D::GetDirectionVector(int32 Direction)
 	default:
 		return FIntVector();
 	}
+}
+
+FVector UWFCGrid3D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
+{
+	if (!IsValidCellIndex(CellIndex))
+	{
+		return FVector::ZeroVector;
+	}
+
+	const FIntVector CellLocation = GetLocationForCellIndex(CellIndex);
+	const FVector CellWorldLocation = FVector(CellLocation) * CellSize;
+	if (bCenter)
+	{
+		return CellWorldLocation + CellSize * 0.5f;
+	}
+	return CellWorldLocation;
 }

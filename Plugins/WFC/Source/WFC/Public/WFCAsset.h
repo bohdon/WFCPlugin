@@ -29,8 +29,8 @@ public:
 	TSubclassOf<UWFCGenerator> GeneratorClass;
 
 	/** The constraints to apply, in order of priority, during generation. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Constraints"))
-	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, meta = (DisplayName = "Constraints"))
+	TArray<UWFCConstraintConfig*> ConstraintConfigs;
 
 	/**
 	 * The model class to use, which will generate all tiles and map them to tile ids.

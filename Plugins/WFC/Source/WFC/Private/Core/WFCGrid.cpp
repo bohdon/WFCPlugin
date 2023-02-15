@@ -62,3 +62,9 @@ FString UWFCGrid::GetCellName(int32 CellIndex) const
 {
 	return FString::FromInt(CellIndex);
 }
+
+FVector UWFCGrid::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
+{
+	// implement in subclass
+	return FVector::ZeroVector;
+}

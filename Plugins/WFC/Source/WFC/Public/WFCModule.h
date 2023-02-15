@@ -7,6 +7,9 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogWFC, Log, All);
 
+DECLARE_STATS_GROUP(TEXT("WFC"), STATGROUP_WFC, STATCAT_Advanced);
+
+
 class FWFCModule : public IModuleInterface
 {
 public:

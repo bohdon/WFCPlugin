@@ -21,6 +21,7 @@ void UWFCModel::ConfigureGenerator(UWFCGenerator* Generator)
 
 FWFCTileId UWFCModel::AddTile(TSharedPtr<FWFCModelTile> Tile)
 {
+	check(Tile.IsValid());
 	check(Tiles.Num() == TileWeights.Num());
 
 	Tile->Id = Tiles.Num();

@@ -8,6 +8,7 @@
 #include "WFCTileAsset3D.h"
 #include "Core/Grids/WFCGrid3D.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/ObjectSaveContext.h"
 
 
 AWFCLevelTileInfo::AWFCLevelTileInfo()
@@ -17,9 +18,9 @@ AWFCLevelTileInfo::AWFCLevelTileInfo()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 }
 
-void AWFCLevelTileInfo::PreSave(const ITargetPlatform* TargetPlatform)
+void AWFCLevelTileInfo::PreSave(FObjectPreSaveContext SaveContext)
 {
-	Super::PreSave(TargetPlatform);
+	Super::PreSave(SaveContext);
 
 #if WITH_EDITOR
 	FindEdgeActors();
@@ -61,6 +62,12 @@ bool AWFCLevelTileInfo::UpdateTileAsset()
 	if (!TileAsset)
 	{
 		return false;
+	}
+
+	// ensure edges are up to date
+	for (const TWeakObjectPtr<AWFCLevelTileEdge>& Edge : Edges)
+	{
+		Edge->UpdateTileLocationAndDirection();
 	}
 
 	TSoftObjectPtr<UWorld> TileLevel = GetLevel()->GetWorld();
@@ -149,3 +156,18 @@ bool AWFCLevelTileInfo::IsExteriorEdge(FIntVector TileLocation, FIntVector Direc
 		ForwardTileCenter.Y < 0 || ForwardTileCenter.Y >= Dimensions.Y ||
 		ForwardTileCenter.Z < 0 || ForwardTileCenter.Z >= Dimensions.Z;
 }
+
+#if WITH_EDITOR
+void AWFCLevelTileInfo::PostEditMove(bool bFinished)
+{
+	Super::PostEditMove(bFinished);
+
+	FindEdgeActors();
+
+	// ensure edges are up to date
+	for (const TWeakObjectPtr<AWFCLevelTileEdge>& Edge : Edges)
+	{
+		Edge->UpdateTileLocationAndDirection();
+	}
+}
+#endif

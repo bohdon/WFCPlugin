@@ -49,6 +49,9 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
+	/** Automatically calculate this edges tile location and direction from its position in the world. */
+	virtual void UpdateTileLocationAndDirection();
+
 #if WITH_EDITOR
 	virtual void PostEditMove(bool bFinished) override;
 #endif

@@ -6,41 +6,41 @@
 #include "Core/WFCModel.h"
 
 
+float UWFCEntropyGenerator::GetCellEntropy(int32 CellIndex) const
+{
+	const FWFCCell& Cell = GetCell(CellIndex);
+	if (Cell.HasSelectionOrNoCandidates())
+	{
+		return 0.f;
+	}
+	return CalculateShannonEntropy(Cell);
+}
+
 FWFCCellIndex UWFCEntropyGenerator::SelectNextCellIndex()
 {
-	int32 MinNumCandidates = INT_MAX;
-	TArray<FWFCCellIndex> BestCells;
+	float MinEntropy = MAX_FLT;
+	FWFCCellIndex BestCellIndex = INDEX_NONE;
 
+	// select the cell with the lowest entropy, adding in a bit of randomness
 	for (FWFCCellIndex CellIndex = 0; CellIndex < NumCells; ++CellIndex)
 	{
 		const FWFCCell& Cell = GetCell(CellIndex);
-		const int32 NumCandidates = Cell.TileCandidates.Num();
 
 		if (Cell.HasSelectionOrNoCandidates())
 		{
-			// don't include cells without multiple candidates
+			// nothing to collapse
 			continue;
 		}
 
-		if (NumCandidates < MinNumCandidates)
+		const float Entropy = CalculateShannonEntropy(Cell) + FMath::FRand() / 1000.f;
+		if (Entropy < MinEntropy)
 		{
-			MinNumCandidates = NumCandidates;
-			BestCells.Reset();
-			BestCells.Add(CellIndex);
-		}
-		else if (NumCandidates == MinNumCandidates)
-		{
-			BestCells.Add(CellIndex);
+			MinEntropy = Entropy;
+			BestCellIndex = CellIndex;
 		}
 	}
 
-	if (BestCells.Num() == 0)
-	{
-		return INDEX_NONE;
-	}
-
-	// TODO: add weighting / prioritization, or other possible random selection logic
-	return BestCells[FMath::RandHelper(BestCells.Num())];
+	return BestCellIndex;
 }
 
 FWFCTileId UWFCEntropyGenerator::SelectNextTileForCell(FWFCCellIndex Index)
@@ -76,4 +76,24 @@ FWFCTileId UWFCEntropyGenerator::SelectNextTileForCell(FWFCCellIndex Index)
 	}
 
 	return Cell.TileCandidates[0];
+}
+
+float UWFCEntropyGenerator::CalculateShannonEntropy(const FWFCCell& Cell) const
+{
+	float SumOfWeights = 0.f;
+	float SumOfLogWeights = 0.f;
+
+	for (const FWFCTileId& TileId : Cell.TileCandidates)
+	{
+		const float Weight = Config.Model->GetTileWeightUnchecked(TileId);
+		if (Weight <= 0.f)
+		{
+			continue;
+		}
+
+		SumOfWeights += Weight;
+		SumOfLogWeights += Weight * FMath::Loge(Weight);
+	}
+
+	return FMath::Loge(SumOfWeights) - (SumOfLogWeights / SumOfWeights);
 }

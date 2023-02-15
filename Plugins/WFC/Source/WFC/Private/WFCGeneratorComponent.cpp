@@ -27,7 +27,7 @@ void UWFCGeneratorComponent::BeginPlay()
 	}
 }
 
-bool UWFCGeneratorComponent::InitializeGenerator()
+bool UWFCGeneratorComponent::Initialize()
 {
 	if (!WFCAsset)
 	{
@@ -41,7 +41,7 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 		return false;
 	}
 
-	if (WFCAsset->TileSet->TileAssets.Num() == 0)
+	if (WFCAsset->TileSet->Tiles.Num() == 0)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("TileSet has no tiles: %s"), *WFCAsset->TileSet->GetName());
 		return false;
@@ -59,36 +59,76 @@ bool UWFCGeneratorComponent::InitializeGenerator()
 		return false;
 	}
 
+	SCOPE_LOG_TIME(TEXT("UWFCGeneratorComponent::InitializeGenerator"), nullptr);
+
 	// create and initialize the model and generate all tiles
 	Model = NewObject<UWFCModel>(this, WFCAsset->ModelClass);
 	check(Model != nullptr);
 	Model->Initialize(WFCAsset->TileSet);
-	Model->GenerateTiles();
+	{
+		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::GenerateTiles"), *Model->GetClass()->GetName()), nullptr);
+		Model->GenerateTiles();
+	}
 
 	// create and initialize the generator
 	Generator = NewObject<UWFCGenerator>(this, WFCAsset->GeneratorClass);
 	check(Generator != nullptr);
 	Generator->OnCellSelected.AddUObject(this, &UWFCGeneratorComponent::OnCellSelected);
+	Generator->OnStateChanged.AddUObject(this, &UWFCGeneratorComponent::OnStateChanged);
 
 	FWFCGeneratorConfig Config;
 	Config.Model = Model;
 	Config.GridConfig = WFCAsset->GridConfig;
-	Config.ConstraintClasses = WFCAsset->ConstraintClasses;
+	Config.ConstraintConfigs = TArray<TWeakObjectPtr<UWFCConstraintConfig>>(WFCAsset->ConstraintConfigs);
 
-	Generator->Initialize(Config);
+	{
+		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::Initialize"), *Generator->GetClass()->GetName()), nullptr);
+		Generator->Initialize(Config);
+	}
 
-	Model->ConfigureGenerator(Generator);
+	{
+		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::ConfigureGenerator"), *Model->GetClass()->GetName()), nullptr);
+		Model->ConfigureGenerator(Generator);
+	}
 
 	return true;
 }
 
-void UWFCGeneratorComponent::Run()
+bool UWFCGeneratorComponent::IsInitialized() const
 {
-	InitializeGenerator();
+	return Generator && Generator->IsInitialized();
+}
 
+void UWFCGeneratorComponent::ResetGenerator()
+{
 	if (Generator)
 	{
+		Generator->Reset();
+	}
+}
+
+void UWFCGeneratorComponent::Run()
+{
+	if (!IsInitialized())
+	{
+		Initialize();
+	}
+
+	if (IsInitialized())
+	{
 		Generator->Run(StepLimit);
+	}
+}
+
+void UWFCGeneratorComponent::Next(bool bBreakAfterConstraints)
+{
+	if (!IsInitialized())
+	{
+		Initialize();
+	}
+	else
+	{
+		Generator->Next(bBreakAfterConstraints);
 	}
 }
 
@@ -132,4 +172,14 @@ void UWFCGeneratorComponent::GetSelectedTileIds(TArray<int32>& TileIds) const
 void UWFCGeneratorComponent::OnCellSelected(int32 CellIndex)
 {
 	OnCellSelectedEvent_BP.Broadcast(CellIndex);
+}
+
+void UWFCGeneratorComponent::OnStateChanged(EWFCGeneratorState State)
+{
+	OnStateChangedEvent_BP.Broadcast(State);
+
+	if (State == EWFCGeneratorState::Finished || State == EWFCGeneratorState::Error)
+	{
+		OnFinishedEvent_BP.Broadcast(State == EWFCGeneratorState::Finished);
+	}
 }

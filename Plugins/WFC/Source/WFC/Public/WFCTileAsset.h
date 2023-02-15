@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Core/WFCTypes.h"
 #include "Engine/DataAsset.h"
 #include "WFCTileAsset.generated.h"
@@ -50,7 +51,7 @@ class WFC_API UWFCTileAsset : public UDataAsset
 public:
 	UWFCTileAsset();
 
-	/** A value that determines how likely this tile is to be selected. */
+	/** Tags that this tile asset has. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Weight;
+	FGameplayTagContainer OwnedTags;
 };

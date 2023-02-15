@@ -11,6 +11,7 @@ class UWFCModel;
 class UWFCGrid;
 class UWFCGridConfig;
 class UWFCConstraint;
+class UWFCConstraintConfig;
 
 
 /**
@@ -25,15 +26,15 @@ struct FWFCGeneratorConfig
 	{
 	}
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY()
 	TWeakObjectPtr<const UWFCModel> Model;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY()
 	TWeakObjectPtr<const UWFCGridConfig> GridConfig;
 
 	/** The constraints to create and use. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
+	UPROPERTY()
+	TArray<TWeakObjectPtr<UWFCConstraintConfig>> ConstraintConfigs;
 };
 
 
@@ -60,6 +61,8 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	EWFCGeneratorState State;
 
+	void SetState(EWFCGeneratorState NewState);
+
 	/** Return the total number of cells */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumCells() const { return NumCells; }
@@ -67,6 +70,14 @@ public:
 	/** Return the total number of unique tile types. */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumTiles() const { return NumTiles; }
+
+	FORCEINLINE const UWFCModel* GetModel() const { return Config.Model.Get(); }
+
+	template <class T>
+	const T* GetModel() const
+	{
+		return Cast<T>(GetModel());
+	}
 
 	FORCEINLINE const UWFCGrid* GetGrid() const { return Grid; }
 
@@ -80,13 +91,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Initialize(FWFCGeneratorConfig InConfig);
 
+	UFUNCTION(BlueprintPure)
+	bool IsInitialized() const { return bIsInitialized; }
+
+	/** Reset all cells and constraints to their initialized state. */
+	UFUNCTION(BlueprintCallable)
+	void Reset();
+
 	/** Run the generator until it is either finished, or an error occurs. */
 	UFUNCTION(BlueprintCallable)
 	void Run(int32 StepLimit = 100000);
 
 	/** Continue the generator forward by selecting the next tile. */
 	UFUNCTION(BlueprintCallable)
-	void Next();
+	void Next(bool bBreakAfterConstraints = false);
 
 	/** Ban a tile from being a candidate for a cell. */
 	UFUNCTION(BlueprintCallable)
@@ -104,6 +122,8 @@ public:
 	void Select(int32 CellIndex, int32 TileId);
 
 	FORCEINLINE bool IsValidCellIndex(FWFCCellIndex Index) const { return Cells.IsValidIndex(Index); }
+
+	FORCEINLINE bool IsValidTileId(FWFCTileId TileId) const { return TileId >= 0 && TileId < NumTiles; }
 
 	/** Return cell data by index */
 	FWFCCell& GetCell(FWFCCellIndex CellIndex);
@@ -129,6 +149,11 @@ public:
 
 	FCellSelectedDelegate OnCellSelected;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FStateChangedDelegate, EWFCGeneratorState /* State */);
+
+	/** Called when the state has changed */
+	FStateChangedDelegate OnStateChanged;
+
 protected:
 	/** The grid being used */
 	UPROPERTY(Transient)
@@ -149,11 +174,13 @@ protected:
 
 	bool bIsInitialized;
 
+	bool bDidSelectCellThisStep;
+
 	/** Create and initialize the grid. */
 	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);
 
 	/** Create and initialize constraint objects. */
-	virtual void InitializeConstraints(TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses);
+	virtual void InitializeConstraints();
 
 	/** Populate the cells array with default values for every cell in the grid */
 	virtual void InitializeCells();
@@ -172,6 +199,17 @@ public:
 	T* GetConstraint()
 	{
 		T* Result = nullptr;
+		if (Constraints.FindItemByClass(&Result))
+		{
+			return Result;
+		}
+		return nullptr;
+	}
+
+	template <class T>
+	const T* GetConstraint() const
+	{
+		const T* Result = nullptr;
 		if (Constraints.FindItemByClass(&Result))
 		{
 			return Result;

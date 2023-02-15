@@ -21,6 +21,28 @@ struct FWFCAdjacentTileMapping
 
 
 /**
+ * Configuration for an adjacency constraint.
+ */
+UCLASS()
+class WFC_API UWFCAdjacencyConstraintConfig : public UWFCConstraintConfig
+{
+	GENERATED_BODY()
+public:
+	UWFCAdjacencyConstraintConfig();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIgnoreContradictionCells;
+
+	/** If true, stop after every tile check for debugging purposes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bDebugNext;
+
+	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
+	virtual void Configure(UWFCConstraint* Constraint) const override;
+};
+
+
+/**
  * Constrains tiles such that only explicitly allowed tiles can be
  * placed next to other tiles in any given direction.
  */
@@ -39,8 +61,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIgnoreContradictionCells;
 
+	/** If true, stop after every tile check for debugging purposes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bDebugNext;
+
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
-	virtual void NotifyCellChanged(FWFCCellIndex CellIndex) override;
+	virtual void Reset() override;
+	virtual void NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection) override;
 	virtual bool Next() override;
 
 	/**

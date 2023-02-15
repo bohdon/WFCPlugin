@@ -13,9 +13,9 @@ AWFCLevelTileEdge::AWFCLevelTileEdge()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
+#if WITH_EDITORONLY_DATA
 	bRunConstructionScriptOnDrag = false;
 
-#if WITH_EDITORONLY_DATA
 	ArrowComponent = CreateEditorOnlyDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
 
 	if (!IsRunningCommandlet())
@@ -29,8 +29,6 @@ AWFCLevelTileEdge::AWFCLevelTileEdge()
 			ArrowComponent->bIsScreenSizeScaled = true;
 		}
 	}
-
-	GridPlacement = EActorGridPlacement::AlwaysLoaded;
 #endif // WITH_EDITORONLY_DATA
 }
 
@@ -65,11 +63,8 @@ void AWFCLevelTileEdge::OnConstruction(const FTransform& Transform)
 	SnapToGrid();
 }
 
-#if WITH_EDITOR
-void AWFCLevelTileEdge::PostEditMove(bool bFinished)
+void AWFCLevelTileEdge::UpdateTileLocationAndDirection()
 {
-	Super::PostEditMove(bFinished);
-
 	const FVector Forward = GetActorForwardVector();
 	EdgeDirection = FIntVector(FMath::RoundToInt(Forward.X), FMath::RoundToInt(Forward.Y), FMath::RoundToInt(Forward.Z));
 
@@ -79,5 +74,13 @@ void AWFCLevelTileEdge::PostEditMove(bool bFinished)
 		const FVector TileCenter = GetActorLocation() - TileCenterOffset;
 		TileLocation = TileInfo->WorldToTileLocation(TileCenter);
 	}
+}
+
+#if WITH_EDITOR
+void AWFCLevelTileEdge::PostEditMove(bool bFinished)
+{
+	Super::PostEditMove(bFinished);
+
+	UpdateTileLocationAndDirection();
 }
 #endif

@@ -28,6 +28,7 @@ struct FWFCTileDef2D
 	GENERATED_BODY()
 
 	FWFCTileDef2D()
+		: Location(FIntPoint::ZeroValue)
 	{
 		EdgeTypes = {
 			{EWFCTile2DEdge::XPos, FGameplayTag::EmptyTag},
@@ -75,7 +76,7 @@ public:
 	bool bAllowRotation;
 
 	/** The definitions for each tile within this asset. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "Location"))
 	TArray<FWFCTileDef2D> TileDefs;
 
 	/** Return a tile def by location, as well as its index. */

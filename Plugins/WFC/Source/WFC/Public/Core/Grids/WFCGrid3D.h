@@ -21,6 +21,10 @@ public:
 	/** The dimensions of the grid */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntVector Dimensions;
+
+	/** The size of one cell in cm */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector CellSize;
 };
 
 
@@ -38,8 +42,12 @@ public:
 	virtual void Initialize(const UWFCGridConfig* Config) override;
 
 	/** The dimensions of the grid */
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	FIntVector Dimensions;
+
+	/** The size of one cell in cm */
+	UPROPERTY(BlueprintReadWrite)
+	FVector CellSize;
 
 	virtual int32 GetNumCells() const override;
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 6; }
@@ -61,4 +69,6 @@ public:
 	/** Return the 2d vector for a direction */
 	UFUNCTION(BlueprintPure)
 	static FIntVector GetDirectionVector(int32 Direction);
+
+	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const override;
 };

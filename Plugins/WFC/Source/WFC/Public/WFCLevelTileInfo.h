@@ -51,7 +51,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "WFC.EdgeType"))
 	FGameplayTag DefaultBottomEdgeType;
 
-	virtual void PreSave(const ITargetPlatform* TargetPlatform) override;
+	virtual void PreSave(FObjectPreSaveContext SaveContext) override;
 
 	UFUNCTION(BlueprintPure)
 	FVector GetTileSize() const;
@@ -83,4 +83,8 @@ public:
 protected:
 	UPROPERTY(Transient, VisibleAnywhere)
 	TArray<TWeakObjectPtr<AWFCLevelTileEdge>> Edges;
+
+#if WITH_EDITOR
+	virtual void PostEditMove(bool bFinished) override;
+#endif
 };

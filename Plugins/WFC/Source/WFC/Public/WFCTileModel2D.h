@@ -27,5 +27,5 @@ public:
 	virtual bool CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB,
 	                                FWFCGridDirection Direction, const UWFCGrid* Grid) const override;
 	virtual bool CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
-	                                             const UWFCGrid* Grid) const override;
+	                                             const UWFCGrid* Grid, const UWFCGenerator* Generator) const override;
 };

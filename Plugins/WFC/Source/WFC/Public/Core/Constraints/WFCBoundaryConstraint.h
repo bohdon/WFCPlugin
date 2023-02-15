@@ -3,10 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Core/WFCConstraint.h"
 #include "WFCBoundaryConstraint.generated.h"
 
 class UWFCGrid;
+
+
+/**
+ * Configuration for an adjacency constraint.
+ */
+UCLASS()
+class WFC_API UWFCBoundaryConstraintConfig : public UWFCConstraintConfig
+{
+	GENERATED_BODY()
+public:
+	UWFCBoundaryConstraintConfig();
+
+	/** An optional tag query that tile edges must match to be allowed to be adjacent to the boundary. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTagQuery EdgeTypeQuery;
+
+	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
+
+	virtual void Configure(UWFCConstraint* Constraint) const override;
+};
 
 
 /**
@@ -19,7 +40,12 @@ class WFC_API UWFCBoundaryConstraint : public UWFCConstraint
 	GENERATED_BODY()
 
 public:
+	/** An optional tag query that tile edges must match to be allowed to be adjacent to the boundary. */
+	UPROPERTY()
+	FGameplayTagQuery EdgeTypeQuery;
+
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
+	virtual void Reset() override;
 	virtual bool Next() override;
 
 	/**
@@ -36,6 +62,9 @@ protected:
 	TMap<FWFCTileId, TArray<FWFCGridDirection>> TileBoundaryProhibitionMap;
 
 	bool bDidApplyInitialConstraint;
+
+	/** Cached map of tiles to ban for each cell. Calculated after the first time this constraint is run incase it needs to re-run */
+	TMap<FWFCCellIndex, TArray<FWFCTileId>> CachedTileBans;
 
 	/** Return true if a tile is allowed to be adjacent to boundaries in the given outgoing directions. */
 	bool CanTileBeAdjacentToBoundaries(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const;

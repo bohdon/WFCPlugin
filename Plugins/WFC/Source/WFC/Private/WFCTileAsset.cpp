@@ -10,6 +10,5 @@ FString FWFCModelAssetTile::ToString() const
 }
 
 UWFCTileAsset::UWFCTileAsset()
-	: Weight(1.f)
 {
 }

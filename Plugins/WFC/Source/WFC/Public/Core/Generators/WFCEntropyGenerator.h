@@ -17,6 +17,12 @@ class WFC_API UWFCEntropyGenerator : public UWFCGenerator
 	GENERATED_BODY()
 
 public:
+	/** Return the entropy of a cell. Intended for debugging only. */
+	UFUNCTION(BlueprintPure)
+	float GetCellEntropy(int32 CellIndex) const;
+
 	virtual FWFCCellIndex SelectNextCellIndex() override;
 	virtual FWFCTileId SelectNextTileForCell(FWFCCellIndex Index) override;
+
+	virtual float CalculateShannonEntropy(const FWFCCell& Cell) const;
 };

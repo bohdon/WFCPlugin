@@ -39,13 +39,25 @@ public:
 
 	virtual void BeginPlay() override;
 
-	/** Initialize the WFC generator */
+	/** Initialize the WFC model and generator */
 	UFUNCTION(BlueprintCallable)
-	bool InitializeGenerator();
+	bool Initialize();
+
+	/** Return true if the generator is currently initialized. */
+	UFUNCTION(BlueprintPure)
+	bool IsInitialized() const;
+
+	/** Reset the current model and generator. */
+	UFUNCTION(BlueprintCallable)
+	void ResetGenerator();
 
 	/** Run the generator and spawn all actors */
 	UFUNCTION(BlueprintCallable)
 	void Run();
+
+	/** Iterate the generator one step. */
+	UFUNCTION(BlueprintCallable)
+	void Next(bool bBreakAfterConstraints = false);
 
 	/** Return the grid being used by the generator. */
 	UFUNCTION(BlueprintPure)
@@ -74,6 +86,18 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FCellSelectedDynDelegate OnCellSelectedEvent_BP;
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FStateChangedDynDelegate, EWFCGeneratorState, State);
+
+	/** Called when the generator state has changed */
+	UPROPERTY(BlueprintAssignable)
+	FStateChangedDynDelegate OnStateChangedEvent_BP;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFinishedDynDelegate, bool, bSuccess);
+
+	/** Called when the generated has finished running */
+	UPROPERTY(BlueprintAssignable)
+	FFinishedDynDelegate OnFinishedEvent_BP;
+
 protected:
 	/** The model instance. */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -84,4 +108,5 @@ protected:
 	UWFCGenerator* Generator;
 
 	void OnCellSelected(int32 CellIndex);
+	void OnStateChanged(EWFCGeneratorState State);
 };

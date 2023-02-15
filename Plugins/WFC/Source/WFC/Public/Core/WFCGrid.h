@@ -84,4 +84,11 @@ public:
 	/** Return a readable name for a cell for debugging purposes */
 	UFUNCTION(BlueprintPure)
 	virtual FString GetCellName(int32 CellIndex) const;
+
+	/**
+	 * Return the world location of a cell.
+	 * @param CellIndex The index of a cell
+	 * @param bCenter If true, return the center location of the cell, otherwise return the origin that lines up with tile placement
+	 */
+	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const;
 };
