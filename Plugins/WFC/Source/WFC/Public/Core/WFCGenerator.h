@@ -14,6 +14,15 @@ class UWFCConstraint;
 class UWFCConstraintConfig;
 
 
+/** The different phases when iterating a WFCGenerator. */
+UENUM(BlueprintType)
+enum class EWFCGeneratorStepPhase : uint8
+{
+	Constraints,
+	Selection,
+};
+
+
 /**
  * Required objects and settings for initializing a WFCGenerator.
  */
@@ -178,6 +187,8 @@ protected:
 
 	/** Tracks how many bans occur during an update. */
 	int32 NumBansThisUpdate;
+
+	EWFCGeneratorStepPhase CurrentStepPhase;
 
 	/** Create and initialize the grid. */
 	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);

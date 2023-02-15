@@ -160,6 +160,8 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	SCOPE_CYCLE_COUNTER(STAT_WFCGeneratorNext);
 	bDidSelectCellThisStep = false;
 
+	CurrentStepPhase = EWFCGeneratorStepPhase::Constraints;
+
 	// update all constraints, which may lead to cell selection
 	bool bDidApplyConstraints = false;
 	for (UWFCConstraint* Constraint : Constraints)
@@ -183,6 +185,8 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	{
 		return;
 	}
+
+	CurrentStepPhase = EWFCGeneratorStepPhase::Selection;
 
 	// select a cell to observe
 	const FWFCCellIndex CellIndex = SelectNextCellIndex();
@@ -312,9 +316,10 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 	const bool bHasSelection = GetCell(CellIndex).HasSelection();
 	if (bHasSelection)
 	{
-		UE_LOG(LogWFC, VeryVerbose, TEXT("Selected %s for Cell %s"),
+		UE_LOG(LogWFC, VeryVerbose, TEXT("Selected %s for Cell %s during %s phase."),
 		       *GetModel()->GetTileDebugString(GetCell(CellIndex).GetSelectedTileId()),
-		       *Grid->GetCellName(CellIndex));
+		       *Grid->GetCellName(CellIndex),
+		       CurrentStepPhase == EWFCGeneratorStepPhase::Constraints ? TEXT("Constraints") : TEXT("Selection"));
 
 		INC_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected);
 		bDidSelectCellThisStep = true;
