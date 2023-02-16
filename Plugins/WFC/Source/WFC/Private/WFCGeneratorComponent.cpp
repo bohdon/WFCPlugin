@@ -15,6 +15,9 @@ UWFCGeneratorComponent::UWFCGeneratorComponent()
 	: StepLimit(100000),
 	  bAutoRun(true)
 {
+#if WITH_EDITORONLY_DATA
+	EditorGridColor = FLinearColor::White;
+#endif
 }
 
 void UWFCGeneratorComponent::BeginPlay()

@@ -21,6 +21,10 @@ public:
 	/** The dimensions of the grid */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FIntPoint Dimensions;
+
+	/** The size of one cell in cm */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector2D CellSize;
 };
 
 
@@ -41,6 +45,10 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FIntPoint Dimensions;
 
+	/** The size of one cell in cm */
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D CellSize;
+
 	virtual int32 GetNumCells() const override;
 	FORCEINLINE virtual int32 GetNumDirections() const override { return 4; }
 	virtual FString GetDirectionName(int32 Direction) const override;
@@ -57,6 +65,8 @@ public:
 	/** Return the grid location for a cell */
 	UFUNCTION(BlueprintPure)
 	FIntPoint GetLocationForCellIndex(int32 CellIndex) const;
+
+	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const override;
 
 	/** Return the 2d vector for a direction */
 	UFUNCTION(BlueprintPure)

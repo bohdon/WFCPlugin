@@ -22,6 +22,7 @@ public class WFC : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"RHI",
 				"Slate",
 				"SlateCore",
 			}

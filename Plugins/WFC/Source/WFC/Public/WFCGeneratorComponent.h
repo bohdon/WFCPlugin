@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/SceneComponent.h"
 #include "Core/WFCTypes.h"
 #include "WFCGeneratorComponent.generated.h"
 
@@ -18,7 +18,7 @@ class UWFCModel;
  * and then populating the scene with tile actors as desired.
  */
 UCLASS(ClassGroup=(Procedural), meta=(BlueprintSpawnableComponent))
-class WFC_API UWFCGeneratorComponent : public UActorComponent
+class WFC_API UWFCGeneratorComponent : public USceneComponent
 {
 	GENERATED_BODY()
 
@@ -98,6 +98,8 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FFinishedDynDelegate OnFinishedEvent_BP;
 
+	UWFCGenerator* GetGenerator() const { return Generator; }
+
 protected:
 	/** The model instance. */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -109,4 +111,11 @@ protected:
 
 	void OnCellSelected(int32 CellIndex);
 	void OnStateChanged(EWFCGeneratorState State);
+
+public:
+#if WITH_EDITORONLY_DATA
+	/** Color of the grid in the editor */
+	UPROPERTY(EditAnywhere, Category = Editor)
+	FLinearColor EditorGridColor;
+#endif // WITH_EDITORONLY_DATA
 };

@@ -5,14 +5,16 @@
 
 
 UWFCGrid2DConfig::UWFCGrid2DConfig()
-	: Dimensions(FIntPoint(10, 10))
+	: Dimensions(FIntPoint(10, 10)),
+	  CellSize(FVector2D(100.f, 100.f))
 {
 	GridClass = UWFCGrid2D::StaticClass();
 }
 
 
 UWFCGrid2D::UWFCGrid2D()
-	: Dimensions(FIntPoint(10, 10))
+	: Dimensions(FIntPoint(10, 10)),
+	  CellSize(FVector2D(100.f, 100.f))
 {
 	// TODO: set default array of direction objects
 }
@@ -25,6 +27,7 @@ void UWFCGrid2D::Initialize(const UWFCGridConfig* Config)
 	check(Config2D != nullptr);
 
 	Dimensions = Config2D->Dimensions;
+	CellSize = Config2D->CellSize;
 }
 
 int32 UWFCGrid2D::GetNumCells() const
@@ -109,6 +112,23 @@ FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
 	const int32 X = CellIndex % Dimensions.X;
 	const int32 Y = (CellIndex - X) / Dimensions.X;
 	return FIntPoint(X, Y);
+}
+
+FVector UWFCGrid2D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
+{
+	if (!IsValidCellIndex(CellIndex))
+	{
+		return FVector::ZeroVector;
+	}
+
+	const FIntPoint CellLocation = GetLocationForCellIndex(CellIndex);
+	const FVector CellSize3D = FVector(CellSize.X, CellSize.Y, 1.f);
+	const FVector CellWorldLocation = FVector(CellLocation) * CellSize3D;
+	if (bCenter)
+	{
+		return CellWorldLocation + CellSize3D * 0.5f;
+	}
+	return CellWorldLocation;
 }
 
 FIntPoint UWFCGrid2D::GetDirectionVector(int32 Direction)

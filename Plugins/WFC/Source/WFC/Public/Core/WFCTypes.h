@@ -144,5 +144,5 @@ struct FWFCModelTile
 	UPROPERTY(BlueprintReadOnly)
 	float Weight;
 
-	virtual FString ToString() const { return FString::Printf(TEXT("[%d](W%0.2f)"), Id, Weight); }
+	virtual FString ToString() const { return FString::Printf(TEXT("[%d]"), Id); }
 };

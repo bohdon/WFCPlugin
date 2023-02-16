@@ -3,9 +3,7 @@
 
 #include "Core/Constraints/WFCAdjacencyConstraint.h"
 
-#include "DrawDebugHelpers.h"
 #include "WFCModule.h"
-#include "WFCStatics.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 
@@ -14,10 +12,6 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Mappings"), STAT_WFC
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Time (ms)"), STAT_WFCAdjacencyConstraintTime, STATGROUP_WFC);
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Checks"), STAT_WFCAdjacencyConstraintNumChecks, STATGROUP_WFC);
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Bans"), STAT_WFCAdjacencyConstraintNumBans, STATGROUP_WFC);
-
-TAutoConsoleVariable<bool> CVarAdjacencyConstraintDrawDebug(
-	TEXT("wfc.AdjacencyConstraint.DrawDebug"), false,
-	TEXT("Draw debug info for adjacency constraints"));
 
 
 UWFCAdjacencyConstraint::UWFCAdjacencyConstraint()
@@ -60,25 +54,23 @@ TArray<FWFCTileId> UWFCAdjacencyConstraint::GetValidAdjacentTileIds(FWFCTileId T
 	return TileAdjacencyMap.FindRef(TileId).AllowedTiles.FindRef(Direction);
 }
 
-void UWFCAdjacencyConstraint::MarkCellForAdjacencyCheck(FWFCCellIndex Index)
+void UWFCAdjacencyConstraint::MarkCellForAdjacencyCheck(FWFCCellIndex CellIndex)
 {
 	// apply adjacency constraints
 	const int32 NumDirections = Grid->GetNumDirections();
 	for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 	{
-		AdjacentCellDirsToCheck.AddUnique(FWFCCellIndexAndDirection(Index, Direction));
+		FWFCCellIndexAndDirection CellDir(CellIndex, Direction);
+		if (!AdjacentCellDirsToCheck.Contains(CellDir))
+		{
+			AdjacentCellDirsToCheck.Insert(CellDir, 0);
+		}
 	}
 }
 
 void UWFCAdjacencyConstraint::NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection)
 {
-	// track the changed cell for changes to propagate during the next update
-	const int32 NumDirections = Grid->GetNumDirections();
-
-	for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
-	{
-		AdjacentCellDirsToCheck.AddUnique(FWFCCellIndexAndDirection(CellIndex, Direction));
-	}
+	MarkCellForAdjacencyCheck(CellIndex);
 }
 
 bool UWFCAdjacencyConstraint::Next()
@@ -89,6 +81,13 @@ bool UWFCAdjacencyConstraint::Next()
 	SET_DWORD_STAT(STAT_WFCAdjacencyConstraintNumBans, 0);
 
 	bool bDidMakeChanges = false;
+	AdjacenciesEnforcedThisUpdate.Reset();
+
+	if (AdjacentCellDirsToCheck.IsEmpty())
+	{
+		// early out
+		return false;
+	}
 
 	// go through pending list of changes to check, banning any tile candidates
 	// that no longer match adjacency rules, and return true if a cell gets selected
@@ -135,28 +134,25 @@ bool UWFCAdjacencyConstraint::Next()
 		}
 		if (TileIdsToBan.Num() > 0)
 		{
-#if ENABLE_DRAW_DEBUG
-			if (CVarAdjacencyConstraintDrawDebug.GetValueOnAnyThread())
-			{
-				const float DebugInterval = CVarWFCDebugStepInterval.GetValueOnAnyThread();
-				FVector CellALocation = Grid->GetCellWorldLocation(CellDir.CellIndex, true);
-				FVector CellBLocation = Grid->GetCellWorldLocation(CellIndexToCheck, true);
-				DrawDebugLine(GetWorld(), CellALocation, CellBLocation, FColor::White, false, DebugInterval, 0, 5.f);
-				DrawDebugPoint(GetWorld(), CellBLocation, 10, FColor::Red, false, DebugInterval, 0);
-			}
-#endif
+			AdjacenciesEnforcedThisUpdate.Add(CellDir.CellIndex, CellIndexToCheck);
 
 			Generator->BanMultiple(CellIndexToCheck, TileIdsToBan);
 			INC_DWORD_STAT_BY(STAT_WFCAdjacencyConstraintNumBans, TileIdsToBan.Num());
 			bDidMakeChanges = true;
 		}
 
-		if (bDidMakeChanges && bDebugNext)
+		if (bDebugNext)
 		{
 			break;
 		}
 	}
 
 	INC_FLOAT_STAT_BY(STAT_WFCAdjacencyConstraintTime, (FPlatformTime::Seconds() - StartTime) * 1000);
+
+	if (bDebugNext)
+	{
+		// always stop when debug next is enabled
+		return true;
+	}
 	return bDidMakeChanges;
 }

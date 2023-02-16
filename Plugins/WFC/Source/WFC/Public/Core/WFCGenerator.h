@@ -163,6 +163,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;
 
+	const TArray<FWFCCellIndex>& GetCellsAffectedThisUpdate() const { return CellsAffectedThisUpdate; }
+
 	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /* CellIndex */);
 
 	/** Called when a cell has been fully collapsed to a single selected tile id. */
@@ -204,6 +206,9 @@ protected:
 
 	EWFCGeneratorStepPhase CurrentStepPhase;
 
+	/** Array of cells that were modified during the last update. */
+	TArray<FWFCCellIndex> CellsAffectedThisUpdate;
+
 	/** Create and initialize the grid. */
 	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);
 
@@ -216,6 +221,8 @@ protected:
 	/** Populate the cells array with default values for every cell in the grid */
 	virtual void InitializeCells();
 
+	bool AreAllCellsSelected() const;
+	
 	/** Called when the candidates for a cell have changed. */
 	virtual void OnCellChanged(FWFCCellIndex CellIndex);
 
@@ -242,6 +249,17 @@ public:
 	{
 		const T* Result = nullptr;
 		if (Constraints.FindItemByClass(&Result))
+		{
+			return Result;
+		}
+		return nullptr;
+	}
+
+	template <class T>
+	const T* GetCellSelector() const
+	{
+		const T* Result = nullptr;
+		if (CellSelectors.FindItemByClass(&Result))
 		{
 			return Result;
 		}

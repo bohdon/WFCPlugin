@@ -148,6 +148,19 @@ void UWFCGenerator::InitializeCells()
 	SET_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected, 0);
 }
 
+bool UWFCGenerator::AreAllCellsSelected() const
+{
+	// TODO: cache
+	for (const FWFCCell& Cell : Cells)
+	{
+		if (!Cell.HasSelection())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 void UWFCGenerator::Reset()
 {
 	InitializeCells();
@@ -156,6 +169,8 @@ void UWFCGenerator::Reset()
 	{
 		Constraint->Reset();
 	}
+
+	SetState(EWFCGeneratorState::None);
 }
 
 void UWFCGenerator::Run(int32 StepLimit)
@@ -182,8 +197,14 @@ void UWFCGenerator::Run(int32 StepLimit)
 
 void UWFCGenerator::Next(bool bBreakAfterConstraints)
 {
+	if (State == EWFCGeneratorState::Finished)
+	{
+		return;
+	}
+
 	SCOPE_CYCLE_COUNTER(STAT_WFCGeneratorNext);
 	bDidSelectCellThisStep = false;
+	CellsAffectedThisUpdate.Reset();
 
 	CurrentStepPhase = EWFCGeneratorStepPhase::Constraints;
 
@@ -196,6 +217,10 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 		{
 			UE_LOG(LogWFC, VeryVerbose, TEXT("Applied constraint: %s, bans: %d"), *Constraint->GetName(), NumBansThisUpdate);
 			bDidApplyConstraints = true;
+			if (State == EWFCGeneratorState::Finished)
+			{
+				return;
+			}
 			SetState(EWFCGeneratorState::InProgress);
 
 			if (bDidSelectCellThisStep)
@@ -234,6 +259,10 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	}
 
 	Select(CellIndex, TileId);
+	if (State == EWFCGeneratorState::Finished)
+	{
+		return;
+	}
 
 	SetState(EWFCGeneratorState::InProgress);
 }
@@ -338,6 +367,8 @@ int32 UWFCGenerator::GetNumCellCandidates(int32 CellIndex) const
 
 void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 {
+	CellsAffectedThisUpdate.AddUnique(CellIndex);
+
 	const bool bHasSelection = GetCell(CellIndex).HasSelection();
 	if (bHasSelection)
 	{
@@ -354,6 +385,11 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 	for (UWFCConstraint* Constraint : Constraints)
 	{
 		Constraint->NotifyCellChanged(CellIndex, bHasSelection);
+	}
+
+	if (AreAllCellsSelected())
+	{
+		SetState(EWFCGeneratorState::Finished);
 	}
 }
 

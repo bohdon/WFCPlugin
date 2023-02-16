@@ -54,7 +54,11 @@ public:
 	 */
 	void AddAdjacentTileMapping(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AllowedTileId);
 
-	void MarkCellForAdjacencyCheck(FWFCCellIndex Index);
+	void MarkCellForAdjacencyCheck(FWFCCellIndex CellIndex);
+
+	const TArray<FWFCCellIndexAndDirection>& GetAdjacentCellDirsToCheck() const { return AdjacentCellDirsToCheck; }
+
+	const TMap<FWFCCellIndex, FWFCCellIndex>& GetAdjacenciesEnforcedThisUpdate() const { return AdjacenciesEnforcedThisUpdate; }
 
 protected:
 	/** Reference to the grid being used. */
@@ -66,6 +70,9 @@ protected:
 
 	/** Current list of cells adjacency constraints to check */
 	TArray<FWFCCellIndexAndDirection> AdjacentCellDirsToCheck;
+
+	/** Map of cells that were affected by this constraint in the last update. */
+	TMap<FWFCCellIndex, FWFCCellIndex> AdjacenciesEnforcedThisUpdate;
 
 	/** Return the array of all valid tiles that an be placed next to a tile in a direction */
 	TArray<FWFCTileId> GetValidAdjacentTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const;
