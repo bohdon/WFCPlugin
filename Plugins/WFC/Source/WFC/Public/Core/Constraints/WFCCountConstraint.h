@@ -8,19 +8,6 @@
 #include "WFCCountConstraint.generated.h"
 
 
-/**
- * Limit the max count of tiles.
- */
-UCLASS(Abstract)
-class WFC_API UWFCCountConstraintConfig : public UWFCConstraintConfig
-{
-	GENERATED_BODY()
-
-public:
-	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
-};
-
-
 USTRUCT()
 struct FWFCCountConstraintTileGroup
 {
@@ -47,7 +34,7 @@ struct FWFCCountConstraintTileGroup
 /**
  * Limits the number of times a tile can be selected.
  */
-UCLASS()
+UCLASS(Abstract)
 class WFC_API UWFCCountConstraint : public UWFCConstraint
 {
 	GENERATED_BODY()
@@ -60,9 +47,6 @@ public:
 
 	/** Set the maximum number of times that a set of tiles can be used. */
 	void AddTileGroupMaxCountMapping(const TArray<FWFCTileId>& TileIds, int32 MaxCount);
-
-	/** Return the number of max count constraint groups that are defined. */
-	int32 GetNumMaxCountGroups() const { return TileGroupMaxCounts.Num(); }
 
 protected:
 	/** Array of tile ids in each tile group, and their maximum count. */
@@ -102,10 +86,10 @@ struct FWFCTileTagMaxCount
 
 
 /**
- * Defines a maximum count for tiles by tag.
+ * Limit the max count of tiles based on the tags of each tile asset.
  */
-UCLASS(DisplayName = "Tag Max Counts")
-class WFC_API UWFCTileSetTagMaxCountsConfig : public UWFCTileSetConfig
+UCLASS(Abstract, DisplayName = "Tag Count Constraint")
+class WFC_API UWFCTagCountConstraint : public UWFCCountConstraint
 {
 	GENERATED_BODY()
 
@@ -113,18 +97,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (TitleProperty = "{Tag} = {MaxCount}"), Category = "TagMaxCounts")
 	TArray<FWFCTileTagMaxCount> MaxCounts;
 
-	int32 GetTileMaxCount(const UWFCTileAsset* TileAsset) const;
-};
+	virtual int32 GetTileMaxCount(const UWFCTileAsset* TileAsset) const;
 
-
-/**
- * Limit the max count of tiles using a Tax Max Counts config defined in the tile set.
- */
-UCLASS(DisplayName = "Tile Asset Max Count Constraint Config")
-class WFC_API UWFCTileAssetCountConstraintConfig : public UWFCCountConstraintConfig
-{
-	GENERATED_BODY()
-
-public:
-	virtual void Configure(UWFCConstraint* Constraint) const override;
+	virtual void Initialize(UWFCGenerator* InGenerator) override;
 };

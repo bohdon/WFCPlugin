@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/WFCConstraint.h"
 #include "Engine/DataAsset.h"
 #include "WFCAsset.generated.h"
 
+class UWFCCellSelector;
+class UWFCConstraint;
 class UWFCGenerator;
 class UWFCGridConfig;
 class UWFCModel;
@@ -24,19 +25,23 @@ class WFC_API UWFCAsset : public UDataAsset
 public:
 	UWFCAsset();
 
-	/** The generator class to use, which controls the rules of how each cell is selected. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, NoClear, meta = (DisplayName = "Generator"))
+	/** The generator class to use, which handles applying all constraints and running cell and tile selection. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, NoClear, DisplayName = "Generator")
 	TSubclassOf<UWFCGenerator> GeneratorClass;
 
-	/** The constraints to apply, in order of priority, during generation. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, meta = (DisplayName = "Constraints"))
-	TArray<UWFCConstraintConfig*> ConstraintConfigs;
+	/** The constraints to apply, in order of priority. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName = "Constraints")
+	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
+
+	/** The cell selectors to use, in order of priority. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName = "Cell Selectors")
+	TArray<TSubclassOf<UWFCCellSelector>> CellSelectorClasses;
 
 	/**
 	 * The model class to use, which will generate all tiles and map them to tile ids.
 	 * The model is also able to configure the generator and all constraints as desired.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "Model"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName = "Model")
 	TSubclassOf<UWFCModel> ModelClass;
 
 	/** The grid and configuration. */

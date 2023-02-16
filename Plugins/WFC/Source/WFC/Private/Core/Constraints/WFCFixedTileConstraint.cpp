@@ -11,11 +11,6 @@
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Fixed Tile Constraint - Mappings"), STAT_WFCFixedTileConstraintMappings, STATGROUP_WFC);
 
 
-TSubclassOf<UWFCConstraint> UWFCFixedTileConstraintConfig::GetConstraintClass() const
-{
-	return UWFCFixedTileConstraint::StaticClass();
-}
-
 void UWFCFixedTileConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
@@ -60,27 +55,25 @@ bool UWFCFixedTileConstraint::Next()
 // 3D Fixed Tile Constraints
 // -------------------------
 
-void UWFCFixedTile3DConstraintConfig::Configure(UWFCConstraint* Constraint) const
+
+void UWFCFiledTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 {
-	Super::Configure(Constraint);
+	Super::Initialize(InGenerator);
 
-	SCOPE_LOG_TIME(TEXT("UWFCFixedTile3DConstraintConfig::Configure"), nullptr);
+	SCOPE_LOG_TIME(TEXT("UWFCFiledTile3DConstraint::Initialize"), nullptr);
 
-	UWFCFixedTileConstraint* FixedConstraint = Cast<UWFCFixedTileConstraint>(Constraint);
-	check(FixedConstraint != nullptr);
-
-	const UWFCGrid3D* Grid = Constraint->GetGenerator()->GetGrid<UWFCGrid3D>();
+	const UWFCGrid3D* Grid = GetGenerator()->GetGrid<UWFCGrid3D>();
 	if (!Grid)
 	{
-		UE_LOG(LogWFC, Error, TEXT("Cannot configure UWFCFixedTile3DConstraintConfig, requires a UWFCGrid3D to be used: %s"),
+		UE_LOG(LogWFC, Error, TEXT("UWFCFiledTile3DConstraint requires a UWFCGrid3D to be used: %s"),
 		       *GetNameSafe(GetOuter()));
 		return;
 	}
 
-	const UWFCAssetModel* Model = Constraint->GetGenerator()->GetModel<UWFCAssetModel>();
+	const UWFCAssetModel* Model = GetGenerator()->GetModel<UWFCAssetModel>();
 	if (!Model)
 	{
-		UE_LOG(LogWFC, Error, TEXT("Cannot configure UWFCFixedTile3DConstraintConfig, requires a UWFCAssetModel to be used: %s"),
+		UE_LOG(LogWFC, Error, TEXT("UWFCFiledTile3DConstraint requires a UWFCAssetModel to be used: %s"),
 		       *GetNameSafe(GetOuter()));
 		return;
 	}
@@ -89,14 +82,14 @@ void UWFCFixedTile3DConstraintConfig::Configure(UWFCConstraint* Constraint) cons
 	{
 		if (!FixedTile.TileAsset)
 		{
-			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s"),
-			       *GetNameSafe(GetOuter()));
+			// TODO: move to asset validation
+			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s"), *GetNameSafe(GetOuter()));
 			continue;
 		}
 
 		// get the cell index
 		const FWFCCellIndex CellIndex = Grid->GetCellIndexForLocation(FixedTile.CellLocation);
-		if (!Constraint->GetGenerator()->IsValidCellIndex(CellIndex))
+		if (!GetGenerator()->IsValidCellIndex(CellIndex))
 		{
 			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s, location not valid: %s"),
 			       *GetNameSafe(GetOuter()), *FixedTile.CellLocation.ToString());
@@ -107,7 +100,7 @@ void UWFCFixedTile3DConstraintConfig::Configure(UWFCConstraint* Constraint) cons
 		int32 TileDefIndex;
 		FixedTile.TileAsset->GetTileDefByLocation(FIntVector(0, 0, 0), TileDefIndex);
 		const FWFCTileId TileId = Model->GetTileIdForAssetTileDef(FixedTile.TileAsset, TileDefIndex, FixedTile.TileRotation);
-		if (!Constraint->GetGenerator()->IsValidTileId(TileId))
+		if (!GetGenerator()->IsValidTileId(TileId))
 		{
 			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s, tile asset and rotation not found: %s, %d"),
 			       *GetNameSafe(GetOuter()), *FixedTile.TileAsset->GetName(), FixedTile.TileRotation);
@@ -115,6 +108,6 @@ void UWFCFixedTile3DConstraintConfig::Configure(UWFCConstraint* Constraint) cons
 		}
 
 		// add the constraint
-		FixedConstraint->AddFixedTileMapping(CellIndex, TileId);
+		AddFixedTileMapping(CellIndex, TileId);
 	}
 }

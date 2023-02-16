@@ -20,31 +20,6 @@ TAutoConsoleVariable<bool> CVarAdjacencyConstraintDrawDebug(
 	TEXT("Draw debug info for adjacency constraints"));
 
 
-UWFCAdjacencyConstraintConfig::UWFCAdjacencyConstraintConfig()
-	: bIgnoreContradictionCells(false),
-	  bDebugNext(false)
-{
-}
-
-TSubclassOf<UWFCConstraint> UWFCAdjacencyConstraintConfig::GetConstraintClass() const
-{
-	return UWFCAdjacencyConstraint::StaticClass();
-}
-
-void UWFCAdjacencyConstraintConfig::Configure(UWFCConstraint* Constraint) const
-{
-	Super::Configure(Constraint);
-
-	UWFCAdjacencyConstraint* AdjacencyConstraint = Cast<UWFCAdjacencyConstraint>(Constraint);
-	check(AdjacencyConstraint != nullptr);
-
-	AdjacencyConstraint->bIgnoreContradictionCells = bIgnoreContradictionCells;
-	AdjacencyConstraint->bDebugNext = bDebugNext;
-
-	// TODO: add adjacency mappings
-}
-
-
 UWFCAdjacencyConstraint::UWFCAdjacencyConstraint()
 	: bIgnoreContradictionCells(false),
 	  bDebugNext(false)

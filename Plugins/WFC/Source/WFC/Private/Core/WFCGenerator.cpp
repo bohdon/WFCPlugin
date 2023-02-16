@@ -4,6 +4,7 @@
 #include "Core/WFCGenerator.h"
 
 #include "WFCModule.h"
+#include "Core/WFCCellSelector.h"
 #include "Core/WFCConstraint.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
@@ -28,6 +29,30 @@ void UWFCGenerator::SetState(EWFCGeneratorState NewState)
 	}
 }
 
+UWFCConstraint* UWFCGenerator::GetConstraint(TSubclassOf<UWFCConstraint> ConstraintClass) const
+{
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		if (Constraint->IsA(ConstraintClass))
+		{
+			return Constraint;
+		}
+	}
+	return nullptr;
+}
+
+UWFCCellSelector* UWFCGenerator::GetCellSelector(TSubclassOf<UWFCCellSelector> SelectorClass) const
+{
+	for (UWFCCellSelector* CellSelector : CellSelectors)
+	{
+		if (CellSelector->IsA(SelectorClass))
+		{
+			return CellSelector;
+		}
+	}
+	return nullptr;
+}
+
 void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 {
 	if (!bIsInitialized)
@@ -38,10 +63,9 @@ void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 		SET_DWORD_STAT(STAT_WFCGeneratorNumTiles, NumTiles);
 
 		InitializeGrid(Config.GridConfig.Get());
-
 		InitializeCells();
-
 		InitializeConstraints();
+		InitializeCellSelectors();
 
 		State = EWFCGeneratorState::InProgress;
 
@@ -58,45 +82,46 @@ void UWFCGenerator::InitializeGrid(const UWFCGridConfig* GridConfig)
 
 void UWFCGenerator::InitializeConstraints()
 {
-	// map of which configs should be used to initialize each constraint
-	TMap<UWFCConstraint*, UWFCConstraintConfig*> ConstraintConfigMap;
-
 	Constraints.Reset();
-	for (const TWeakObjectPtr<UWFCConstraintConfig>& ConstraintConfig : Config.ConstraintConfigs)
+	for (const TSubclassOf<UWFCConstraint>& ConstraintClass : Config.ConstraintClasses)
 	{
-		if (!ConstraintConfig.IsValid())
-		{
-			UE_LOG(LogWFC, Warning, TEXT("Found invalid constraint config during InitializeConstraints"));
-			continue;
-		}
-
-		// determine which constraint class to create
-		const TSubclassOf<UWFCConstraint> ConstraintClass = ConstraintConfig->GetConstraintClass();
 		if (!ConstraintClass)
 		{
-			UE_LOG(LogWFC, Warning, TEXT("Failed to get constraint class from config: %s"), *GetNameSafe(ConstraintConfig.Get()));
 			continue;
 		}
 
 		// create the new constraint object
 		UWFCConstraint* Constraint = NewObject<UWFCConstraint>(this, ConstraintClass);
-		if (Constraint)
-		{
-			Constraints.Add(Constraint);
-			ConstraintConfigMap.Add(Constraint, ConstraintConfig.Get());
-		}
+		check(Constraint != nullptr);
+		Constraints.Add(Constraint);
 	}
 
 	// initialize once all constraints are constructed in case they need to reference each other
 	for (UWFCConstraint* Constraint : Constraints)
 	{
 		Constraint->Initialize(this);
+	}
+}
 
-		// allow the config to configure the initialized constraint
-		UWFCConstraintConfig* ConstraintConfig = ConstraintConfigMap.FindRef(Constraint);
-		check(ConstraintConfig != nullptr);
+void UWFCGenerator::InitializeCellSelectors()
+{
+	CellSelectors.Reset();
+	for (TSubclassOf<UWFCCellSelector> CellSelectorClass : Config.CellSelectorClasses)
+	{
+		if (!CellSelectorClass)
+		{
+			continue;
+		}
 
-		ConstraintConfig->Configure(Constraint);
+		UWFCCellSelector* NewSelector = NewObject<UWFCCellSelector>(this, CellSelectorClass);
+		check(NewSelector != nullptr);
+		CellSelectors.Add(NewSelector);
+	}
+
+	// initialize once all selectors are constructed in case they need to reference each other
+	for (UWFCCellSelector* CellSelector : CellSelectors)
+	{
+		CellSelector->Initialize(this);
 	}
 }
 
@@ -334,12 +359,50 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 
 FWFCCellIndex UWFCGenerator::SelectNextCellIndex()
 {
-	// implement in subclass, finding a value between [0..NumCells)
+	// TODO: why would one cell selector not be used? how do we define phases of selection?
+	for (UWFCCellSelector* CellSelector : CellSelectors)
+	{
+		const FWFCCellIndex CellIndex = CellSelector->SelectNextCell();
+
+		if (CellIndex != INDEX_NONE)
+		{
+			return CellIndex;
+		}
+	}
 	return INDEX_NONE;
 }
 
 FWFCTileId UWFCGenerator::SelectNextTileForCell(FWFCCellIndex CellIndex)
 {
-	// implement in subclass
-	return INDEX_NONE;
+	const FWFCCell& Cell = GetCell(CellIndex);
+
+	if (Cell.HasNoCandidates())
+	{
+		return INDEX_NONE;
+	}
+
+	// select a candidate, applying weighted probabilities
+	float TotalWeight = 0.f;
+	TArray<float> TileWeights;
+	for (const FWFCTileId& TileId : Cell.TileCandidates)
+	{
+		const float TileWeight = Config.Model->GetTileWeightUnchecked(TileId);
+		TileWeights.Add(TileWeight);
+		TotalWeight += TileWeight;
+	}
+
+	float Rand = FMath::FRand() * TotalWeight;
+	for (int32 Idx = 0; Idx < Cell.TileCandidates.Num(); ++Idx)
+	{
+		if (Rand >= TileWeights[Idx])
+		{
+			Rand -= TileWeights[Idx];
+		}
+		else
+		{
+			return Cell.TileCandidates[Idx];
+		}
+	}
+
+	return Cell.TileCandidates[0];
 }

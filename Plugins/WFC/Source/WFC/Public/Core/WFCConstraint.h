@@ -41,20 +41,3 @@ protected:
 	UPROPERTY(Transient)
 	UWFCGenerator* Generator;
 };
-
-
-/**
- * Defines the settings necessary for setting up and using a constraint.
- */
-UCLASS(Abstract, BlueprintType, EditInlineNew, DefaultToInstanced)
-class WFC_API UWFCConstraintConfig : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	/** Return the constraint class to use for this config */
-	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const;
-
-	/** Configure a constraint */
-	virtual void Configure(UWFCConstraint* Constraint) const;
-};

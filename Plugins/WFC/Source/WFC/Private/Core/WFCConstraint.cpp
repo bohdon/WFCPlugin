@@ -25,14 +25,3 @@ bool UWFCConstraint::Next()
 {
 	return false;
 }
-
-TSubclassOf<UWFCConstraint> UWFCConstraintConfig::GetConstraintClass() const
-{
-	unimplemented();
-	return nullptr;
-}
-
-void UWFCConstraintConfig::Configure(UWFCConstraint* Constraint) const
-{
-	// implement in subclass
-}

@@ -80,7 +80,8 @@ bool UWFCGeneratorComponent::Initialize()
 	FWFCGeneratorConfig Config;
 	Config.Model = Model;
 	Config.GridConfig = WFCAsset->GridConfig;
-	Config.ConstraintConfigs = TArray<TWeakObjectPtr<UWFCConstraintConfig>>(WFCAsset->ConstraintConfigs);
+	Config.ConstraintClasses = WFCAsset->ConstraintClasses;
+	Config.CellSelectorClasses = WFCAsset->CellSelectorClasses;
 
 	{
 		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::Initialize"), *Generator->GetClass()->GetName()), nullptr);

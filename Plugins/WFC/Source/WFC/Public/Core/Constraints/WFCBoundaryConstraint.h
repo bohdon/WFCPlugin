@@ -12,30 +12,9 @@ class UWFCGrid;
 
 /**
  * Require tiles placed next to the grid boundary to follow certain rules.
- */
-UCLASS(DisplayName = "Boundary Constraint Config")
-class WFC_API UWFCBoundaryConstraintConfig : public UWFCConstraintConfig
-{
-	GENERATED_BODY()
-
-public:
-	UWFCBoundaryConstraintConfig();
-
-	/** An optional tag query that tile edges must match to be allowed to be adjacent to the boundary. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTagQuery EdgeTypeQuery;
-
-	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
-
-	virtual void Configure(UWFCConstraint* Constraint) const override;
-};
-
-
-/**
- * Require tiles placed next to the grid boundary to follow certain rules.
  * This is useful for enforcing that large tiles remain wholly inside the grid.
  */
-UCLASS()
+UCLASS(DisplayName = "Boundary Constraint")
 class WFC_API UWFCBoundaryConstraint : public UWFCConstraint
 {
 	GENERATED_BODY()

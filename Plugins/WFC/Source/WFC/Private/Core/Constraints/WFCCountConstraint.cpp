@@ -12,15 +12,6 @@ DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Count Constraint - Time (ms)"), STAT_WFCCou
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Count Constraint - Bans"), STAT_WFCCountConstraintNumBans, STATGROUP_WFC);
 
 
-// UWFCCountConstraintConfig
-// -------------------------
-
-TSubclassOf<UWFCConstraint> UWFCCountConstraintConfig::GetConstraintClass() const
-{
-	return UWFCCountConstraint::StaticClass();
-}
-
-
 // UWFCCountConstraint
 // -------------------
 
@@ -133,10 +124,10 @@ bool UWFCCountConstraint::Next()
 }
 
 
-// UWFCTileSetMaxCountConfig
-// -------------------------
+// UWFCTagCountConstraint
+// ----------------------
 
-int32 UWFCTileSetTagMaxCountsConfig::GetTileMaxCount(const UWFCTileAsset* TileAsset) const
+int32 UWFCTagCountConstraint::GetTileMaxCount(const UWFCTileAsset* TileAsset) const
 {
 	if (!TileAsset)
 	{
@@ -157,17 +148,11 @@ int32 UWFCTileSetTagMaxCountsConfig::GetTileMaxCount(const UWFCTileAsset* TileAs
 	return 0;
 }
 
-
-// UWFCTileAssetCountConstraintConfig
-// ----------------------------------
-
-void UWFCTileAssetCountConstraintConfig::Configure(UWFCConstraint* Constraint) const
+void UWFCTagCountConstraint::Initialize(UWFCGenerator* InGenerator)
 {
-	Super::Configure(Constraint);
+	Super::Initialize(InGenerator);
 
-	UWFCCountConstraint* CountConstraint = Cast<UWFCCountConstraint>(Constraint);
-
-	const UWFCAssetModel* Model = Constraint->GetGenerator()->GetModel<UWFCAssetModel>();
+	const UWFCAssetModel* Model = GetGenerator()->GetModel<UWFCAssetModel>();
 	const UWFCTileSet* TileSet = Model ? Model->GetAssetTileSet() : nullptr;
 	if (!Model || !TileSet)
 	{
@@ -176,16 +161,9 @@ void UWFCTileAssetCountConstraintConfig::Configure(UWFCConstraint* Constraint) c
 		return;
 	}
 
-	const UWFCTileSetTagMaxCountsConfig* MaxCounts = TileSet->GetConfig<UWFCTileSetTagMaxCountsConfig>();
-	if (!MaxCounts)
-	{
-		// no maximum counts config
-		return;
-	}
-
 	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
 	{
-		const int32 TileMaxCount = MaxCounts->GetTileMaxCount(TileAsset);
+		const int32 TileMaxCount = GetTileMaxCount(TileAsset);
 		if (TileMaxCount > 0)
 		{
 			const FWFCTileIdArray IdArray = Model->GetTileIdsForAsset(TileAsset);
@@ -201,11 +179,10 @@ void UWFCTileAssetCountConstraintConfig::Configure(UWFCConstraint* Constraint) c
 
 			if (OriginTileIds.Num() > 0)
 			{
-				CountConstraint->AddTileGroupMaxCountMapping(OriginTileIds, TileMaxCount);
+				AddTileGroupMaxCountMapping(OriginTileIds, TileMaxCount);
 			}
 		}
 	}
 
-	UE_LOG(LogWFC, Verbose, TEXT("UWFCTileAssetCountConstraintConfig configured %d max count mappings"),
-	       CountConstraint->GetNumMaxCountGroups());
+	UE_LOG(LogWFC, Verbose, TEXT("UWFCTileAssetCountConstraintConfig configured %d max count mappings"), TileGroupMaxCounts.Num());
 }

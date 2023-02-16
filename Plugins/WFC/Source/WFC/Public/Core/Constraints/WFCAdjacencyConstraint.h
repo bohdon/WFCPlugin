@@ -21,32 +21,10 @@ struct FWFCAdjacentTileMapping
 
 
 /**
- * Require tiles placed next to each other to follow adjacency rules.
- */
-UCLASS(DisplayName = "Adjacency Constraint Config")
-class WFC_API UWFCAdjacencyConstraintConfig : public UWFCConstraintConfig
-{
-	GENERATED_BODY()
-public:
-	UWFCAdjacencyConstraintConfig();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIgnoreContradictionCells;
-
-	/** If true, stop after every tile check for debugging purposes. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bDebugNext;
-
-	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
-	virtual void Configure(UWFCConstraint* Constraint) const override;
-};
-
-
-/**
  * Constrains tiles such that only explicitly allowed tiles can be
  * placed next to other tiles in any given direction.
  */
-UCLASS()
+UCLASS(DisplayName = "Adjacency Constraint")
 class WFC_API UWFCAdjacencyConstraint : public UWFCConstraint
 {
 	GENERATED_BODY()

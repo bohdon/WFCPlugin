@@ -3,10 +3,12 @@
 
 #include "WFCAsset.h"
 
-#include "Core/Generators/WFCEntropyGenerator.h"
+#include "Core/WFCCellSelector.h"
+#include "Core/WFCGenerator.h"
 
 
 UWFCAsset::UWFCAsset()
 {
-	GeneratorClass = UWFCEntropyGenerator::StaticClass();
+	GeneratorClass = UWFCGenerator::StaticClass();
+	CellSelectorClasses = {UWFCRandomCellSelector::StaticClass()};
 }

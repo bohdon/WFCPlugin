@@ -28,22 +28,9 @@ struct FWFCFixedTileConstraintEntry
 
 
 /**
- * Configuration for a fixed tile constraint.
- */
-UCLASS(Abstract)
-class WFC_API UWFCFixedTileConstraintConfig : public UWFCConstraintConfig
-{
-	GENERATED_BODY()
-
-public:
-	virtual TSubclassOf<UWFCConstraint> GetConstraintClass() const override;
-};
-
-
-/**
  * A constraint that specifies exact tiles that must be used for specific cells.
  */
-UCLASS()
+UCLASS(Abstract)
 class WFC_API UWFCFixedTileConstraint : public UWFCConstraint
 {
 	GENERATED_BODY()
@@ -92,17 +79,15 @@ struct FWFCFixedTileConstraint3DEntry
 };
 
 
-/**
- * Configuration for a 3d fixed tile constraint.
- */
-UCLASS(DisplayName = "Fixed Constraint Config (Tile Asset 3D)")
-class WFC_API UWFCFixedTile3DConstraintConfig : public UWFCFixedTileConstraintConfig
+UCLASS(Abstract)
+class UWFCFiledTile3DConstraint : public UWFCFixedTileConstraint
 {
 	GENERATED_BODY()
 
 public:
+	/** The specific tiles to place and their locations. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FWFCFixedTileConstraint3DEntry> FixedTiles;
 
-	virtual void Configure(UWFCConstraint* Constraint) const override;
+	virtual void Initialize(UWFCGenerator* InGenerator) override;
 };

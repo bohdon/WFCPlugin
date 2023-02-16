@@ -7,11 +7,11 @@
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 
+class UWFCCellSelector;
 class UWFCModel;
 class UWFCGrid;
 class UWFCGridConfig;
 class UWFCConstraint;
-class UWFCConstraintConfig;
 
 
 /** The different phases when iterating a WFCGenerator. */
@@ -41,20 +41,21 @@ struct FWFCGeneratorConfig
 	UPROPERTY()
 	TWeakObjectPtr<const UWFCGridConfig> GridConfig;
 
-	/** The constraints to create and use. */
 	UPROPERTY()
-	TArray<TWeakObjectPtr<UWFCConstraintConfig>> ConstraintConfigs;
+	TArray<TSubclassOf<UWFCConstraint>> ConstraintClasses;
+
+	UPROPERTY()
+	TArray<TSubclassOf<UWFCCellSelector>> CellSelectorClasses;
 };
 
 
 // TODO: make async
-// TODO: rename UWFCTileSelector
 
 /**
  * Handles running the actual processes for selecting, banning, and propagating
  * changes for a WFC model, grid, and tile set.
  */
-UCLASS(Abstract, BlueprintType, Blueprintable)
+UCLASS(BlueprintType, Blueprintable)
 class WFC_API UWFCGenerator : public UObject
 {
 	GENERATED_BODY()
@@ -95,6 +96,14 @@ public:
 	{
 		return Cast<T>(GetGrid());
 	}
+
+	/** Return a constraint by class. */
+	UFUNCTION(BlueprintPure, Meta = (DeterminesOutputType="ConstraintClass"))
+	UWFCConstraint* GetConstraint(TSubclassOf<UWFCConstraint> ConstraintClass) const;
+
+	/** Return a cell selector by class. */
+	UFUNCTION(BlueprintPure, Meta = (DeterminesOutputType="SelectorClass"))
+	UWFCCellSelector* GetCellSelector(TSubclassOf<UWFCCellSelector> SelectorClass) const;
 
 	/** Initialize the generator. */
 	UFUNCTION(BlueprintCallable)
@@ -156,6 +165,7 @@ public:
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /* CellIndex */);
 
+	/** Called when a cell has been fully collapsed to a single selected tile id. */
 	FCellSelectedDelegate OnCellSelected;
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FStateChangedDelegate, EWFCGeneratorState /* State */);
@@ -166,11 +176,15 @@ public:
 protected:
 	/** The grid being used */
 	UPROPERTY(Transient)
-	const UWFCGrid* Grid;
+	TObjectPtr<const UWFCGrid> Grid;
 
-	/** The constraints to apply, in order of priority, during generation. */
+	/** The constraint instances to apply, in order of priority. */
 	UPROPERTY(Transient)
-	TArray<UWFCConstraint*> Constraints;
+	TArray<TObjectPtr<UWFCConstraint>> Constraints;
+
+	/** The cell selector instances to use, in order of priority. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UWFCCellSelector>> CellSelectors;
 
 	/** The cached total number of available tiles. */
 	int32 NumTiles;
@@ -196,16 +210,19 @@ protected:
 	/** Create and initialize constraint objects. */
 	virtual void InitializeConstraints();
 
+	/** Create and initialize cell selector objects. */
+	virtual void InitializeCellSelectors();
+
 	/** Populate the cells array with default values for every cell in the grid */
 	virtual void InitializeCells();
 
 	/** Called when the candidates for a cell have changed. */
 	virtual void OnCellChanged(FWFCCellIndex CellIndex);
 
-	/** Return the next cell that should have a tile selected */
+	/** Return the next cell that should be fully collapsed. */
 	virtual FWFCCellIndex SelectNextCellIndex();
 
-	/** Return the tile to select for a cell */
+	/** Return the tile to select for a cell being collapsed. */
 	virtual FWFCTileId SelectNextTileForCell(FWFCCellIndex CellIndex);
 
 public:

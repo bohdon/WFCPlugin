@@ -14,26 +14,6 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Boundary Constraint - Checks"), STAT_WFCBou
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Boundary Constraint - Bans"), STAT_WFCBoundaryConstraintNumBans, STATGROUP_WFC);
 
 
-UWFCBoundaryConstraintConfig::UWFCBoundaryConstraintConfig()
-{
-}
-
-TSubclassOf<UWFCConstraint> UWFCBoundaryConstraintConfig::GetConstraintClass() const
-{
-	return UWFCBoundaryConstraint::StaticClass();
-}
-
-void UWFCBoundaryConstraintConfig::Configure(UWFCConstraint* Constraint) const
-{
-	Super::Configure(Constraint);
-
-	UWFCBoundaryConstraint* BoundaryConstraint = Cast<UWFCBoundaryConstraint>(Constraint);
-	check(BoundaryConstraint != nullptr);
-
-	BoundaryConstraint->EdgeTypeQuery = EdgeTypeQuery;
-}
-
-
 void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
