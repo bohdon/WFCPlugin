@@ -31,6 +31,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UWFCTileAsset3D* TileAsset;
 
+	/** The actor class to spawn for this tile. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<AActor> TileActorClass;
+
 	/** If true, automatically update the tile asset when this actor's level is saved */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutoSaveTileAsset;

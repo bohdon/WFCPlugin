@@ -70,7 +70,7 @@ bool AWFCLevelTileInfo::UpdateTileAsset()
 		Edge->UpdateTileLocationAndDirection();
 	}
 
-	TSoftObjectPtr<UWorld> TileLevel = GetLevel()->GetWorld();
+	const TSoftObjectPtr<UWorld> TileLevel = GetLevel()->GetWorld();
 
 	// update asset dimensions
 	if (TileAsset->Dimensions != Dimensions)
@@ -89,7 +89,16 @@ bool AWFCLevelTileInfo::UpdateTileAsset()
 			{
 				FWFCTileDef3D TileDef;
 				TileDef.Location = FIntVector(X, Y, Z);
-				TileDef.Level = TileDef.Location == FIntVector::ZeroValue ? TileLevel : nullptr;
+				if (TileDef.Location == FIntVector::ZeroValue)
+				{
+					TileDef.ActorClass = TileActorClass;
+					TileDef.Level = TileLevel;
+				}
+				else
+				{
+					TileDef.ActorClass = nullptr;
+					TileDef.Level = nullptr;
+				}
 				TileDef.EdgeTypes = GetAllEdgeTypesForTile(TileDef.Location);
 
 				NewTileDefs.Add(TileDef);

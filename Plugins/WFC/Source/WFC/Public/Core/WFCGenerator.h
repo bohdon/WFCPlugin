@@ -14,15 +14,6 @@ class UWFCGridConfig;
 class UWFCConstraint;
 
 
-/** The different phases when iterating a WFCGenerator. */
-UENUM(BlueprintType)
-enum class EWFCGeneratorStepPhase : uint8
-{
-	Constraints,
-	Selection,
-};
-
-
 /**
  * Required objects and settings for initializing a WFCGenerator.
  */

@@ -71,4 +71,5 @@ public:
 	static FIntVector GetDirectionVector(int32 Direction);
 
 	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const override;
+	virtual FTransform GetCellWorldTransform(int32 CellIndex, int32 Rotation) const override;
 };

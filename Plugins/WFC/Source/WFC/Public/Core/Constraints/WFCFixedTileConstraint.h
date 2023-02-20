@@ -80,13 +80,13 @@ struct FWFCFixedTileConstraint3DEntry
 
 
 UCLASS(Abstract)
-class UWFCFiledTile3DConstraint : public UWFCFixedTileConstraint
+class WFC_API UWFCFixedTile3DConstraint : public UWFCFixedTileConstraint
 {
 	GENERATED_BODY()
 
 public:
 	/** The specific tiles to place and their locations. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TArray<FWFCFixedTileConstraint3DEntry> FixedTiles;
 
 	virtual void Initialize(UWFCGenerator* InGenerator) override;

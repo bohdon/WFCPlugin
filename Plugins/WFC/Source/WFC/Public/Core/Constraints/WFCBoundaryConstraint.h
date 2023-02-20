@@ -21,7 +21,7 @@ class WFC_API UWFCBoundaryConstraint : public UWFCConstraint
 
 public:
 	/** An optional tag query that tile edges must match to be allowed to be adjacent to the boundary. */
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FGameplayTagQuery EdgeTypeQuery;
 
 	virtual void Initialize(UWFCGenerator* InGenerator) override;

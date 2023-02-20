@@ -16,7 +16,7 @@ class UWFCTileAsset;
  * and index into the source tile for large tile support.
  */
 USTRUCT(BlueprintType)
-struct FWFCModelAssetTile : public FWFCModelTile
+struct WFC_API FWFCModelAssetTile : public FWFCModelTile
 {
 	GENERATED_BODY()
 

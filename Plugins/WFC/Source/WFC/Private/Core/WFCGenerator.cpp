@@ -369,13 +369,16 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 {
 	CellsAffectedThisUpdate.AddUnique(CellIndex);
 
-	const bool bHasSelection = GetCell(CellIndex).HasSelection();
+	FWFCCell& Cell = GetCell(CellIndex);
+	const bool bHasSelection = Cell.HasSelection();
 	if (bHasSelection)
 	{
-		UE_LOG(LogWFC, VeryVerbose, TEXT("Selected %s for Cell %s during %s phase."),
-		       *GetModel()->GetTileDebugString(GetCell(CellIndex).GetSelectedTileId()),
+		Cell.CollapsePhase = CurrentStepPhase;
+
+		UE_LOG(LogWFC, VeryVerbose, TEXT("Cell %s collapsed to %s during %s phase."),
 		       *Grid->GetCellName(CellIndex),
-		       CurrentStepPhase == EWFCGeneratorStepPhase::Constraints ? TEXT("Constraints") : TEXT("Selection"));
+		       *GetModel()->GetTileDebugString(GetCell(CellIndex).GetSelectedTileId()),
+		       Cell.CollapsePhase == EWFCGeneratorStepPhase::Constraints ? TEXT("Constraints") : TEXT("Selection"));
 
 		INC_DWORD_STAT(STAT_WFCGeneratorNumCellsSelected);
 		bDidSelectCellThisStep = true;

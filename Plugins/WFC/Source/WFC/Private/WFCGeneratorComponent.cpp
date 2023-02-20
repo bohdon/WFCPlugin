@@ -13,11 +13,9 @@
 
 UWFCGeneratorComponent::UWFCGeneratorComponent()
 	: StepLimit(100000),
-	  bAutoRun(true)
+	  bAutoRun(true),
+	  EditorGridColor(FLinearColor::White)
 {
-#if WITH_EDITORONLY_DATA
-	EditorGridColor = FLinearColor::White;
-#endif
 }
 
 void UWFCGeneratorComponent::BeginPlay()
@@ -176,6 +174,7 @@ void UWFCGeneratorComponent::GetSelectedTileIds(TArray<int32>& TileIds) const
 
 void UWFCGeneratorComponent::OnCellSelected(int32 CellIndex)
 {
+	OnCellSelectedEvent.Broadcast(CellIndex);
 	OnCellSelectedEvent_BP.Broadcast(CellIndex);
 }
 
@@ -186,5 +185,6 @@ void UWFCGeneratorComponent::OnStateChanged(EWFCGeneratorState State)
 	if (State == EWFCGeneratorState::Finished || State == EWFCGeneratorState::Error)
 	{
 		OnFinishedEvent_BP.Broadcast(State == EWFCGeneratorState::Finished);
+		OnFinishedEvent.Broadcast(State);
 	}
 }

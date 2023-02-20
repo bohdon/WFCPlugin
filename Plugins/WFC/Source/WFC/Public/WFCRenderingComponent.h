@@ -30,29 +30,6 @@ class WFC_API UWFCRenderingComponent : public UDebugDrawComponent
 
 protected:
 	UWFCRenderingComponent();
-	
-	UPROPERTY(EditDefaultsOnly)
-	bool bShowCellCoordinates;
-	
-	UPROPERTY(EditDefaultsOnly)
-	bool bShowNumCandidates;
-	
-	UPROPERTY(EditDefaultsOnly)
-	bool bShowEntropy;
-
-	/** Only show entropy when it is below this threshold. */
-	UPROPERTY(EditDefaultsOnly, Meta = (EditCondition = "bShowEntropy"))
-	float EntropyThreshold;
-
-	UPROPERTY(EditDefaultsOnly)
-	bool bShowSelectedTileIds;
-
-	UPROPERTY(EditDefaultsOnly)
-	bool bHighlightUpdatedCells;
-
-	/** Scale applied to cell boxes in addition to dynamic scaling. */
-	UPROPERTY(EditDefaultsOnly)
-	FVector CellScale;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

@@ -56,7 +56,7 @@ bool UWFCFixedTileConstraint::Next()
 // -------------------------
 
 
-void UWFCFiledTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
+void UWFCFixedTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 

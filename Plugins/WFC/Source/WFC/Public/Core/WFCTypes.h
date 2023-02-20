@@ -6,6 +6,7 @@
 #include "WFCTypes.generated.h"
 
 
+enum class EWFCGeneratorStepPhase : uint8;
 /** Represents a direction pointing from one cell in a grid to another. */
 typedef int32 FWFCGridDirection;
 
@@ -45,6 +46,16 @@ enum class EWFCGeneratorState : uint8
 };
 
 
+/** The different phases when iterating a WFCGenerator. */
+UENUM(BlueprintType)
+enum class EWFCGeneratorStepPhase : uint8
+{
+	None,
+	Constraints,
+	Selection,
+};
+
+
 /**
  * Stores the state of a single cell within a grid during WFC generation.
  * Most importantly it keeps track of all tile candidates still available for a cell.
@@ -52,13 +63,15 @@ enum class EWFCGeneratorState : uint8
 struct FWFCCell
 {
 	FWFCCell()
+		: CollapsePhase(EWFCGeneratorStepPhase::Selection)
 	{
 	}
 
 	/** The array of tile candidates for this cell. */
 	TArray<FWFCTileId> TileCandidates;
 
-	// TODO: consider moving these to reduce memory footprint
+	/** The phase during which this cell was fully collapsed. */
+	EWFCGeneratorStepPhase CollapsePhase;
 
 	FORCEINLINE bool HasNoCandidates() const { return TileCandidates.Num() == 0; }
 

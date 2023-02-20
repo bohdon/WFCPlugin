@@ -87,33 +87,46 @@ void UWFCAssetModel::ConfigureAdjacencyConstraint(const UWFCGenerator* Generator
 
 	const int32 NumDirections = Grid->GetNumDirections();
 
-	// TODO: don't check adjacency for B -> A if A -> B has already been checked, change AddAdjacentTileMapping to include both
+	// TODO: blacklist interior tile/edge pairs and compare only externals, then iterate internals directly and add mappings
 
-	// TODO: skip internal edges, and instead iterate all large tiles and directly add adjacency mappings
-
-	// iterate over all tiles, comparing socket types for compatibility
+	// iterate over all distinct pairs of tiles, including reflectivity, comparing socket types for compatibility
 	for (FWFCTileId TileIdA = 0; TileIdA <= GetMaxTileId(); ++TileIdA)
 	{
 		const FWFCModelAssetTile& TileA = GetTileRef<FWFCModelAssetTile>(TileIdA);
 
-		for (FWFCTileId TileIdB = 0; TileIdB <= GetMaxTileId(); ++TileIdB)
+		// compare A <-> A for each direction
+		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
+		{
+			INC_DWORD_STAT(STAT_WFCAdjacencyConstraintMappingChecks);
+
+			if (CanTilesBeAdjacent(TileA, TileA, Direction, Grid))
+			{
+				AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdA);
+			}
+		}
+
+		for (FWFCTileId TileIdB = TileIdA + 1; TileIdB <= GetMaxTileId(); ++TileIdB)
 		{
 			const FWFCModelAssetTile& TileB = GetTileRef<FWFCModelAssetTile>(TileIdB);
 
+			// compare A <-> B for each direction
 			for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 			{
 				INC_DWORD_STAT(STAT_WFCAdjacencyConstraintMappingChecks);
 
 				if (CanTilesBeAdjacent(TileA, TileB, Direction, Grid))
 				{
-					UE_LOG(LogWFC, VeryVerbose, TEXT("Allowing adjacency: %s < Dir %s < %s"),
-					       *TileA.ToString(), *Grid->GetDirectionName(Direction), *TileB.ToString());
-
 					AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
+
+					// add opposite directly as well
+					const FWFCGridDirection OppositeDirection = Grid->GetOppositeDirection(Direction);
+					AdjacencyConstraint->AddAdjacentTileMapping(TileIdB, OppositeDirection, TileIdA);
 				}
 			}
 		}
 	}
+
+	AdjacencyConstraint->LogDebugInfo();
 }
 
 bool UWFCAssetModel::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB, FWFCGridDirection Direction,
@@ -139,9 +152,6 @@ void UWFCAssetModel::ConfigureBoundaryConstraint(const UWFCGenerator* Generator,
 		{
 			if (!CanTileBeAdjacentToGridBoundary(Tile, Direction, Grid, Generator))
 			{
-				UE_LOG(LogWFC, VeryVerbose, TEXT("Prohibiting boundary adjacency: %s > Dir %s"),
-				       *Tile.ToString(), *Grid->GetDirectionName(Direction));
-
 				BoundaryConstraint->AddProhibitedAdjacentBoundaryMapping(TileId, Direction);
 			}
 		}

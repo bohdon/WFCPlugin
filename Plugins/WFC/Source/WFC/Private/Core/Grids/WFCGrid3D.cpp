@@ -174,3 +174,15 @@ FVector UWFCGrid3D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 	}
 	return CellWorldLocation;
 }
+
+FTransform UWFCGrid3D::GetCellWorldTransform(int32 CellIndex, int32 Rotation) const
+{
+	const FRotator Rotator = FVector(GetDirectionVector(RotateDirection(0, Rotation))).ToOrientationRotator();
+	// rotate around the center of a cell
+	FTransform Result = FTransform(Rotator, CellSize * 0.5f);
+
+	// then offset by the cell location, and remove the half cell size to un-center
+	const FVector Offset = FVector(GetLocationForCellIndex(CellIndex)) * CellSize;
+	Result.AddToTranslation(Offset - CellSize * 0.5f);
+	return Result;
+}

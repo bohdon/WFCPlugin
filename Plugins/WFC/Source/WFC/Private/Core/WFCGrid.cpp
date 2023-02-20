@@ -68,3 +68,9 @@ FVector UWFCGrid::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 	// implement in subclass
 	return FVector::ZeroVector;
 }
+
+FTransform UWFCGrid::GetCellWorldTransform(int32 CellIndex, int32 Rotation) const
+{
+	// implement in subclass
+	return FTransform();
+}

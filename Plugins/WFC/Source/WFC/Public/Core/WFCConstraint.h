@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "WFCConstraint.generated.h"
 
+class UWFCModel;
 class UWFCGenerator;
 
 
@@ -20,7 +21,10 @@ class WFC_API UWFCConstraint : public UObject
 
 public:
 	/** Return the generator that owns this constraint */
-	FORCEINLINE UWFCGenerator* GetGenerator() const { return Generator; }
+	UWFCGenerator* GetGenerator() const { return Generator; }
+
+	/** Return the WFC model being used. */
+	const UWFCModel* GetModel() const;
 
 	/** Initialize the constraint for a generator */
 	virtual void Initialize(UWFCGenerator* InGenerator);
@@ -37,7 +41,10 @@ public:
 	 */
 	virtual bool Next();
 
+	/** Log debug info about this constraint. */
+	virtual void LogDebugInfo() const;
+
 protected:
 	UPROPERTY(Transient)
-	UWFCGenerator* Generator;
+	TObjectPtr<UWFCGenerator> Generator;
 };

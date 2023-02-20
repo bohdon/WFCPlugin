@@ -13,6 +13,47 @@ class UWFCGrid;
 class UWFCModel;
 
 
+USTRUCT(BlueprintType)
+struct FWFCGeneratorDebugSettings
+{
+	GENERATED_BODY()
+
+	FWFCGeneratorDebugSettings()
+		: bShowCellCoordinates(false),
+		  bShowNumCandidates(false),
+		  bShowEntropy(false),
+		  DebugEntropyThreshold(2.f),
+		  bShowSelectedTileIds(false),
+		  bHighlightUpdatedCells(true),
+		  DebugCellScale(FVector(0.6f))
+	{
+	}
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bShowCellCoordinates;
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bShowNumCandidates;
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bShowEntropy;
+
+	/** Only show entropy when it is below this threshold. */
+	UPROPERTY(EditAnywhere, Meta = (EditCondition = "bShowEntropy"), Category = "Debug")
+	float DebugEntropyThreshold;
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bShowSelectedTileIds;
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bHighlightUpdatedCells;
+
+	/** Scale applied to cell boxes in addition to dynamic scaling. */
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	FVector DebugCellScale;
+};
+
+
 /**
  * A component that handles running a Wave Function Collapse generator,
  * and then populating the scene with tile actors as desired.
@@ -36,6 +77,13 @@ public:
 	/** If true, automatically run the generator on begin play. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutoRun;
+
+	/** Color of the grid in the editor */
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	FLinearColor EditorGridColor;
+
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	FWFCGeneratorDebugSettings DebugSettings;
 
 	virtual void BeginPlay() override;
 
@@ -81,6 +129,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTileIds(TArray<int32>& TileIds) const;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FCellSelectedDelegate, int32 /*CellIndex*/);
+
+	FCellSelectedDelegate OnCellSelectedEvent;
+
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCellSelectedDynDelegate, int32, CellIndex);
 
 	UPROPERTY(BlueprintAssignable)
@@ -91,6 +143,10 @@ public:
 	/** Called when the generator state has changed */
 	UPROPERTY(BlueprintAssignable)
 	FStateChangedDynDelegate OnStateChangedEvent_BP;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FFinishedDelegate, EWFCGeneratorState /*State*/)
+
+	FFinishedDelegate OnFinishedEvent;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFinishedDynDelegate, bool, bSuccess);
 
@@ -111,11 +167,4 @@ protected:
 
 	void OnCellSelected(int32 CellIndex);
 	void OnStateChanged(EWFCGeneratorState State);
-
-public:
-#if WITH_EDITORONLY_DATA
-	/** Color of the grid in the editor */
-	UPROPERTY(EditAnywhere, Category = Editor)
-	FLinearColor EditorGridColor;
-#endif // WITH_EDITORONLY_DATA
 };

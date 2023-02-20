@@ -15,6 +15,7 @@ class UWFCGrid;
  */
 struct FWFCAdjacentTileMapping
 {
+	// TODO: use multimap, and test perf
 	/** Map of tiles that are allowed to be placed next to this tile for an incoming direction */
 	TMap<FWFCGridDirection, TArray<FWFCTileId>> AllowedTiles;
 };
@@ -47,10 +48,14 @@ public:
 	virtual void Reset() override;
 	virtual void NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection) override;
 	virtual bool Next() override;
+	virtual void LogDebugInfo() const override;
 
 	/**
 	 * Add an adjacency mapping that allows AllowedTileId to be placed next to TileId for
 	 * an incoming direction (from AllowedTileId -> TileId).
+	 * @param TileId The tile that defines a constraint for other tiles adjacent to it.
+	 * @param Direction The direction relative to the tile.
+	 * @param AllowedTileId The tile that is allowed to exist adjacent to the tile.
 	 */
 	void AddAdjacentTileMapping(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AllowedTileId);
 
@@ -65,6 +70,7 @@ protected:
 	UPROPERTY(Transient)
 	const UWFCGrid* Grid;
 
+	// TODO: index by direction first, then multimap TileId -> TileId[]
 	/** Adjacent tile mappings for each tile. */
 	TMap<FWFCTileId, FWFCAdjacentTileMapping> TileAdjacencyMap;
 

@@ -92,4 +92,13 @@ public:
 	 */
 	UFUNCTION(BlueprintPure)
 	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const;
+
+	/**
+	 * Return the transform of a tile within a cell, considering rotation.
+	 * @param CellIndex The index of a cell.
+	 * @param Rotation The rotation of the tile.
+	 * @return The tile transform, placed at origin of the tile, e.g. the corner at 0,0,0, with rotation.
+	 */
+	UFUNCTION(BlueprintPure)
+	virtual FTransform GetCellWorldTransform(int32 CellIndex, int32 Rotation) const;
 };

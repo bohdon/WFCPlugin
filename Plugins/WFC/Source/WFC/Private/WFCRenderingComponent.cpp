@@ -38,13 +38,6 @@ FPrimitiveViewRelevance FWFCDebugSceneProxy::GetViewRelevance(const FSceneView* 
 
 
 UWFCRenderingComponent::UWFCRenderingComponent()
-	: bShowCellCoordinates(false),
-	  bShowNumCandidates(false),
-	  bShowEntropy(false),
-	  EntropyThreshold(2.f),
-	  bShowSelectedTileIds(false),
-	  bHighlightUpdatedCells(true),
-	  CellScale(FVector(0.6f))
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
@@ -66,21 +59,23 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 
 	FWFCDebugSceneProxy* DebugProxy = new FWFCDebugSceneProxy(this);
 
-	const UWFCGeneratorComponent* GeneratorComponent = GetGeneratorComponent();
-	if (!GeneratorComponent)
+	const UWFCGeneratorComponent* GeneratorComp = GetGeneratorComponent();
+	if (!GeneratorComp)
 	{
 		DebugProxy->Texts.Emplace(FString(TEXT("Missing WFCGeneratorComponent")), GetComponentLocation(), FLinearColor::Yellow);
 		return DebugProxy;
 	}
 
-	const UWFCAsset* WFCAsset = GeneratorComponent->WFCAsset;
+	const FWFCGeneratorDebugSettings& Settings = GeneratorComp->DebugSettings;
+
+	const UWFCAsset* WFCAsset = GeneratorComp->WFCAsset;
 	if (!WFCAsset)
 	{
 		DebugProxy->Texts.Emplace(FString(TEXT("Select a WFCAsset")), GetComponentLocation(), FLinearColor::White);
 		return DebugProxy;
 	}
 
-	const FTransform GridTransform = GeneratorComponent->GetComponentTransform();
+	const FTransform GridTransform = GeneratorComp->GetComponentTransform();
 
 	// draw grid
 	FIntVector GridDimensions;
@@ -89,11 +84,11 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 
 	const FVector GridMin = GridTransform.GetTranslation();
 	const FVector GridMax = GridTransform.TransformPosition(FVector(GridDimensions) * GridCellSize);
-	DebugProxy->Boxes.Emplace(FBox(GridMin, GridMax), GeneratorComponent->EditorGridColor.ToFColor(true));
+	DebugProxy->Boxes.Emplace(FBox(GridMin, GridMax), GeneratorComp->EditorGridColor.ToFColor(true));
 
-	if (GeneratorComponent->IsInitialized())
+	if (GeneratorComp->IsInitialized())
 	{
-		const UWFCGenerator* Generator = GeneratorComponent->GetGenerator();
+		const UWFCGenerator* Generator = GeneratorComp->GetGenerator();
 		const UWFCGrid* Grid = Generator->GetGrid();
 		const UWFCEntropyCellSelector* EntropySelector = Generator->GetCellSelector<UWFCEntropyCellSelector>();
 		const UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>();
@@ -126,21 +121,23 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 			const bool bWasAffectedThisUpdate = Generator->GetCellsAffectedThisUpdate().Contains(CellIndex);
 
 			TArray<FString> CellTextLines;
-			if (bShowCellCoordinates)
+			if (Settings.bShowCellCoordinates)
 			{
 				CellTextLines.Add(Grid->GetCellName(CellIndex));
 			}
 			const FVector CellCenter = GridTransform.TransformPosition(Grid->GetCellWorldLocation(CellIndex, true));
-			FVector CellHalfSize = CellScale * GridCellSize * 0.5f;
+			FVector CellHalfSize = Settings.DebugCellScale * GridCellSize * 0.5f;
 
 			FLinearColor Color;
 			FLinearColor TextColor;
 			if (Cell.HasSelection())
 			{
-				CellHalfSize *= 0.01f;
-				Color = FLinearColor::Blue;
-				TextColor = FLinearColor::Blue;
-				if (bShowSelectedTileIds || (bHighlightUpdatedCells && bWasAffectedThisUpdate))
+				// was the collapse from selection or from constraints?
+				const bool bWasFromSelection = Cell.CollapsePhase == EWFCGeneratorStepPhase::Selection;
+				CellHalfSize *= 0.1f;
+				Color = bWasFromSelection ? FLinearColor::Green : FLinearColor::Blue;
+				TextColor = bWasFromSelection ? FLinearColor::Green : FLinearColor::Blue;
+				if (Settings.bShowSelectedTileIds || (Settings.bHighlightUpdatedCells && bWasAffectedThisUpdate))
 				{
 					CellTextLines.Add(Generator->GetTileDebugString(Cell.GetSelectedTileId()));
 				}
@@ -150,6 +147,10 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 				CellHalfSize *= 0.01f;
 				Color = FLinearColor::Red;
 				TextColor = FLinearColor::Red;
+				if (Settings.bShowNumCandidates)
+				{
+					CellTextLines.Add(TEXT("0"));
+				}
 			}
 			else
 			{
@@ -158,21 +159,21 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 				CellHalfSize *= Openness * 0.8f + 0.2f;
 				Color = FLinearColor::LerpUsingHSV(CollapsedColor, OpenColor, Openness);
 				TextColor = Color * 1.5f;
-				if (bShowNumCandidates)
+				if (Settings.bShowNumCandidates)
 				{
 					CellTextLines.Add(FString::FromInt(NumCandidates));
 				}
-				if (bShowEntropy && EntropySelector)
+				if (Settings.bShowEntropy && EntropySelector)
 				{
 					const float Entropy = EntropySelector->GetCellEntropy(CellIndex);
-					if (Entropy <= EntropyThreshold)
+					if (Entropy <= Settings.DebugEntropyThreshold)
 					{
 						CellTextLines.Add(FString::Printf(TEXT("e%0.2f"), Entropy));
 					}
 				}
 			}
 
-			if (bHighlightUpdatedCells && bWasAffectedThisUpdate)
+			if (Settings.bHighlightUpdatedCells && bWasAffectedThisUpdate)
 			{
 				DebugProxy->Spheres.Emplace(GridCellSize.X * 0.15f, CellCenter, FColor::Green);
 				TextColor = FLinearColor(FColor::Green);

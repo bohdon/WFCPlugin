@@ -6,6 +6,7 @@
 #include "WFCModule.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
+#include "Core/WFCModel.h"
 
 
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Mappings"), STAT_WFCAdjacencyConstraintMappings, STATGROUP_WFC);
@@ -155,4 +156,35 @@ bool UWFCAdjacencyConstraint::Next()
 		return true;
 	}
 	return bDidMakeChanges;
+}
+
+void UWFCAdjacencyConstraint::LogDebugInfo() const
+{
+	const float MemSize = TileAdjacencyMap.GetAllocatedSize() / 1024.f;
+	UE_LOG(LogWFC, Verbose, TEXT("%s mappings: %d (%0.2fKB)"), *GetClass()->GetName(), TileAdjacencyMap.Num(), MemSize);
+
+	const UWFCModel* Model = GetModel();
+	if (!Model)
+	{
+		return;
+	}
+
+	for (auto& Elem : TileAdjacencyMap)
+	{
+		const FString TileStr = Model->GetTileDebugString(Elem.Key);
+		UE_LOG(LogWFC, VeryVerbose, TEXT("%s allowed tiles..."), *TileStr);
+
+		for (auto& MappingElem : Elem.Value.AllowedTiles)
+		{
+			const FString DirectionStr = Grid->GetDirectionName(MappingElem.Key);
+
+			TArray<FString> TileStrs;
+			for (const int32& TileId : MappingElem.Value)
+			{
+				TileStrs.Add(FString::FromInt(TileId));
+			}
+
+			UE_LOG(LogWFC, VeryVerbose, TEXT("    %s -> %s"), *DirectionStr, *FString::Join(TileStrs, TEXT(", ")));
+		}
+	}
 }
