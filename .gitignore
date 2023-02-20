@@ -15,6 +15,7 @@ DerivedDataCache/*
 # Visual Studio user specific files
 .vs/
 .vscode/
+.vsconfig
 
 # VS Code Workspace
 *.code-workspace
