@@ -62,16 +62,16 @@ void UWFCFixedTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 
 	SCOPE_LOG_TIME(TEXT("UWFCFiledTile3DConstraint::Initialize"), nullptr);
 
-	const UWFCGrid3D* Grid = GetGenerator()->GetGrid<UWFCGrid3D>();
-	if (!Grid)
+	const UWFCGrid3D* Grid3D = Cast<UWFCGrid3D>(Grid);
+	if (!Grid3D)
 	{
 		UE_LOG(LogWFC, Error, TEXT("UWFCFiledTile3DConstraint requires a UWFCGrid3D to be used: %s"),
 		       *GetNameSafe(GetOuter()));
 		return;
 	}
 
-	const UWFCAssetModel* Model = GetGenerator()->GetModel<UWFCAssetModel>();
-	if (!Model)
+	const UWFCAssetModel* AssetModel = Cast<UWFCAssetModel>(Model);
+	if (!AssetModel)
 	{
 		UE_LOG(LogWFC, Error, TEXT("UWFCFiledTile3DConstraint requires a UWFCAssetModel to be used: %s"),
 		       *GetNameSafe(GetOuter()));
@@ -88,7 +88,7 @@ void UWFCFixedTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 		}
 
 		// get the cell index
-		const FWFCCellIndex CellIndex = Grid->GetCellIndexForLocation(FixedTile.CellLocation);
+		const FWFCCellIndex CellIndex = Grid3D->GetCellIndexForLocation(FixedTile.CellLocation);
 		if (!GetGenerator()->IsValidCellIndex(CellIndex))
 		{
 			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s, location not valid: %s"),
@@ -99,13 +99,15 @@ void UWFCFixedTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 		// get the tile id
 		int32 TileDefIndex;
 		FixedTile.TileAsset->GetTileDefByLocation(FIntVector(0, 0, 0), TileDefIndex);
-		const FWFCTileId TileId = Model->GetTileIdForAssetTileDef(FixedTile.TileAsset, TileDefIndex, FixedTile.TileRotation);
+		const FWFCTileId TileId = AssetModel->GetTileIdForAssetTileDef(FixedTile.TileAsset, TileDefIndex, FixedTile.TileRotation);
 		if (!GetGenerator()->IsValidTileId(TileId))
 		{
 			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s, tile asset and rotation not found: %s, %d"),
 			       *GetNameSafe(GetOuter()), *FixedTile.TileAsset->GetName(), FixedTile.TileRotation);
 			continue;
 		}
+
+		// TODO: add constraint for all parts of the large tile, to save arc consistency some effort
 
 		// add the constraint
 		AddFixedTileMapping(CellIndex, TileId);

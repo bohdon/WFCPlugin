@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "WFCConstraint.generated.h"
 
+class UWFCGrid;
 class UWFCModel;
 class UWFCGenerator;
 
@@ -22,9 +23,6 @@ class WFC_API UWFCConstraint : public UObject
 public:
 	/** Return the generator that owns this constraint */
 	UWFCGenerator* GetGenerator() const { return Generator; }
-
-	/** Return the WFC model being used. */
-	const UWFCModel* GetModel() const;
 
 	/** Initialize the constraint for a generator */
 	virtual void Initialize(UWFCGenerator* InGenerator);
@@ -47,4 +45,12 @@ public:
 protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UWFCGenerator> Generator;
+
+	/** Reference to the grid being used. */
+	UPROPERTY(Transient)
+	TObjectPtr<const UWFCGrid> Grid;
+
+	/** Reference to the model being used. */
+	UPROPERTY(Transient)
+	TObjectPtr<const UWFCModel> Model;
 };

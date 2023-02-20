@@ -18,8 +18,6 @@ void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
-	Grid = Generator->GetGrid();
-
 	bDidApplyInitialConstraint = false;
 
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintMappings, 0);

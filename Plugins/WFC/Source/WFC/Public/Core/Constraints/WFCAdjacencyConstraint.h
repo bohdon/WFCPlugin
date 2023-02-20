@@ -7,8 +7,6 @@
 #include "Core/WFCTypes.h"
 #include "WFCAdjacencyConstraint.generated.h"
 
-class UWFCGrid;
-
 
 /**
  * Mapping of directions to tiles that are allowed to be placed next to another tile.
@@ -20,6 +18,8 @@ struct FWFCAdjacentTileMapping
 	TMap<FWFCGridDirection, TArray<FWFCTileId>> AllowedTiles;
 };
 
+
+// TODO: reparent to ArcConsistencyConstraint
 
 /**
  * Constrains tiles such that only explicitly allowed tiles can be
@@ -66,10 +66,6 @@ public:
 	const TMap<FWFCCellIndex, FWFCCellIndex>& GetAdjacenciesEnforcedThisUpdate() const { return AdjacenciesEnforcedThisUpdate; }
 
 protected:
-	/** Reference to the grid being used. */
-	UPROPERTY(Transient)
-	const UWFCGrid* Grid;
-
 	// TODO: index by direction first, then multimap TileId -> TileId[]
 	/** Adjacent tile mappings for each tile. */
 	TMap<FWFCTileId, FWFCAdjacentTileMapping> TileAdjacencyMap;

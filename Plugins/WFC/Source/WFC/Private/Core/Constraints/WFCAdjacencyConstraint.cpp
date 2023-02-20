@@ -25,8 +25,6 @@ void UWFCAdjacencyConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
-	Grid = Generator->GetGrid();
-
 	SET_DWORD_STAT(STAT_WFCAdjacencyConstraintMappings, 0);
 	SET_FLOAT_STAT(STAT_WFCAdjacencyConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCAdjacencyConstraintNumChecks, 0);
@@ -163,7 +161,6 @@ void UWFCAdjacencyConstraint::LogDebugInfo() const
 	const float MemSize = TileAdjacencyMap.GetAllocatedSize() / 1024.f;
 	UE_LOG(LogWFC, Verbose, TEXT("%s mappings: %d (%0.2fKB)"), *GetClass()->GetName(), TileAdjacencyMap.Num(), MemSize);
 
-	const UWFCModel* Model = GetModel();
 	if (!Model)
 	{
 		return;

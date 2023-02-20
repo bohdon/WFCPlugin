@@ -11,17 +11,9 @@ void UWFCConstraint::Initialize(UWFCGenerator* InGenerator)
 	check(InGenerator != nullptr);
 
 	Generator = InGenerator;
+	Grid = Generator->GetGrid();
+	Model = Generator->GetModel();
 }
-
-const UWFCModel* UWFCConstraint::GetModel() const
-{
-	if (Generator)
-	{
-		return Generator->GetModel();
-	}
-	return nullptr;
-}
-
 
 void UWFCConstraint::Reset()
 {

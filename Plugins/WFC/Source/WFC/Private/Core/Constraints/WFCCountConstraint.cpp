@@ -152,9 +152,9 @@ void UWFCTagCountConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
-	const UWFCAssetModel* Model = GetGenerator()->GetModel<UWFCAssetModel>();
-	const UWFCTileSet* TileSet = Model ? Model->GetAssetTileSet() : nullptr;
-	if (!Model || !TileSet)
+	const UWFCAssetModel* AssetModel = Cast<UWFCAssetModel>(Model);
+	const UWFCTileSet* TileSet = AssetModel ? AssetModel->GetAssetTileSet() : nullptr;
+	if (!AssetModel || !TileSet)
 	{
 		UE_LOG(LogWFC, Error, TEXT("UWFCTileAssetCountConstraintConfig requires a UWFCAssetModel and UWFCTileSet to be used: %s"),
 		       *GetNameSafe(GetOuter()));
@@ -166,13 +166,13 @@ void UWFCTagCountConstraint::Initialize(UWFCGenerator* InGenerator)
 		const int32 TileMaxCount = GetTileMaxCount(TileAsset);
 		if (TileMaxCount > 0)
 		{
-			const FWFCTileIdArray IdArray = Model->GetTileIdsForAsset(TileAsset);
+			const FWFCTileIdArray IdArray = AssetModel->GetTileIdsForAsset(TileAsset);
 
 			// only apply the max count limitation to the tile at 0,0,0 within the asset,
 			// so that large tiles don't count against it multiple times.
-			TArray<FWFCTileId> OriginTileIds = IdArray.TileIds.FilterByPredicate([Model](const int32& TileId)
+			TArray<FWFCTileId> OriginTileIds = IdArray.TileIds.FilterByPredicate([AssetModel](const int32& TileId)
 			{
-				const FWFCModelAssetTile* AssetTile = Model->GetTile<FWFCModelAssetTile>(TileId);
+				const FWFCModelAssetTile* AssetTile = AssetModel->GetTile<FWFCModelAssetTile>(TileId);
 				check(AssetTile != nullptr);
 				return AssetTile->TileDefIndex == 0;
 			});

@@ -7,8 +7,6 @@
 #include "Core/WFCConstraint.h"
 #include "WFCBoundaryConstraint.generated.h"
 
-class UWFCGrid;
-
 
 /**
  * Require tiles placed next to the grid boundary to follow certain rules.
@@ -34,10 +32,6 @@ public:
 	void AddProhibitedAdjacentBoundaryMapping(FWFCTileId TileId, FWFCGridDirection Direction);
 
 protected:
-	/** Reference to the grid being used. */
-	UPROPERTY(Transient)
-	const UWFCGrid* Grid;
-
 	/** Map of tiles and the outgoing directions for which they are prohibited from being adjacent to the grid boundary. */
 	TMap<FWFCTileId, TArray<FWFCGridDirection>> TileBoundaryProhibitionMap;
 
