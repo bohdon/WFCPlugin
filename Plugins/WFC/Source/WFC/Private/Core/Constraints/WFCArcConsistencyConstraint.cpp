@@ -9,6 +9,7 @@
 #include "Core/WFCModel.h"
 
 
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Arc Consistency - Allowed Tile Adds"), STAT_WFCArcConsistencyAdds, STATGROUP_WFC);
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Arc Consistency - Allowed Tile Entries"), STAT_WFCArcConsistencyEntries, STATGROUP_WFC);
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Arc Consistency - Update Time (ms)"), STAT_WFCArcConstraintTime, STATGROUP_WFC);
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Arc Consistency - Checks"), STAT_WFCArcConstraintNumChecks, STATGROUP_WFC);
@@ -25,6 +26,7 @@ void UWFCArcConsistencyConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
+	SET_DWORD_STAT(STAT_WFCArcConsistencyAdds, 0);
 	SET_DWORD_STAT(STAT_WFCArcConsistencyEntries, 0);
 	SET_FLOAT_STAT(STAT_WFCArcConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCArcConstraintNumChecks, 0);
@@ -56,7 +58,6 @@ void UWFCArcConsistencyConstraint::Reset()
 	bDidApplyInitialConstraint = false;
 	AdjacentCellDirsToCheck.Reset();
 
-	SET_DWORD_STAT(STAT_WFCArcConsistencyEntries, 0);
 	SET_FLOAT_STAT(STAT_WFCArcConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCArcConstraintNumChecks, 0);
 	SET_DWORD_STAT(STAT_WFCArcConstraintNumBans, 0);
@@ -64,8 +65,12 @@ void UWFCArcConsistencyConstraint::Reset()
 
 void UWFCArcConsistencyConstraint::AddAllowedTileForDirection(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AllowedTileId)
 {
-	INC_DWORD_STAT(STAT_WFCArcConsistencyEntries);
-	AllowedTiles[TileId][Direction].AddUnique(AllowedTileId);
+	INC_DWORD_STAT(STAT_WFCArcConsistencyAdds);
+	if (!AllowedTiles[TileId][Direction].Contains(AllowedTileId))
+	{
+		AllowedTiles[TileId][Direction].Add(AllowedTileId);
+		INC_DWORD_STAT(STAT_WFCArcConsistencyEntries);
+	}
 }
 
 TArray<FWFCTileId> UWFCArcConsistencyConstraint::GetValidAdjacentTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const

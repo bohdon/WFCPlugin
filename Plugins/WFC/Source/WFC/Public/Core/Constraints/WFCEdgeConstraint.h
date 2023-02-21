@@ -27,10 +27,27 @@ public:
 	/** Return true if two edges are allowed to be next to each other. */
 	virtual bool AreEdgesCompatible(const FGameplayTag& EdgeA, const FGameplayTag& EdgeB) const;
 
+	/** Return true if two tiles can be next to each other based on their edge types. */
+	virtual bool AreTilesCompatible(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB, FWFCGridDirection Direction) const;
+
 protected:
 	/** Reference to the asset model required for this constraint. */
 	UPROPERTY(Transient)
 	TObjectPtr<const UWFCAssetModel> AssetModel;
+
+	/**
+	 * Initialize the allowed tiles by iterating all tiles in the model,
+	 * looking up their edge types, and adding mappings.
+	 */
+	void InitializeFromTiles();
+
+	/**
+	 * Initialize the allowed tiles by iterating all assets, checking their edge types against
+	 * other assets, then adding mappings for the matching tiles and rotation variants.
+	 * Experimental, performs less checks but inefficiently attempts to add redundant entries
+	 * and has issues if there are duplicate tile assets in the tile set.
+	 */
+	void InitializeFromAssets();
 
 	/**
 	 * Add allowed tiles for a large tile interior edge, including all rotation variants.
@@ -46,10 +63,10 @@ protected:
 	 * Add allowed tiles for a tile def whose edge is compatible with another tile def.
 	 * Adds mappings for rotation variants in which the local direction pairing is the same.
 	 * @param TileAIds The list of tile ids for tile def A.
-	 * @param InDirectionA The local incoming direction into tile def A. 
+	 * @param OutDirectionA The direction local to A, going from A->B. 
 	 * @param TileBIds The list of tile ids for tile def B.
-	 * @param OutDirectionB The local outgoing direction of tile def B that matches the incoming direction of A.
+	 * @param OutDirectionB The direction local to B, going from B->A.
 	 */
-	void AddMatchingEdgeAllowedTiles(const TArray<FWFCTileId>& TileAIds, FWFCGridDirection InDirectionA,
+	void AddMatchingEdgeAllowedTiles(const TArray<FWFCTileId>& TileAIds, FWFCGridDirection OutDirectionA,
 	                                 const TArray<FWFCTileId>& TileBIds, FWFCGridDirection OutDirectionB);
 };
