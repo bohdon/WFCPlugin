@@ -43,7 +43,8 @@ struct WFC_API FWFCModelAssetTile : public FWFCModelTile
 
 
 /**
- * A data asset defining a WFC tile of any size or shape
+ * A data asset defining a WFC tile of any size or shape.
+ * A large tile asset will contain multiple tile definitions.
  */
 UCLASS(Abstract, BlueprintType, Blueprintable)
 class WFC_API UWFCTileAsset : public UDataAsset
@@ -56,4 +57,26 @@ public:
 	/** Tags that this tile asset has. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTagContainer OwnedTags;
+
+	/**
+	 * Return the number of allowed rotations.
+	 * Note that the rotations may not be 0..NumRotations, and GetAllowedRotations should be
+	 * used when iterating over the exact list of rotations.
+	 */
+	virtual int32 GetNumRotations() const;
+
+	/** Return the valid rotations that can be used for this tile. */
+	virtual void GetAllowedRotations(TArray<int32>& OutRotations) const;
+
+	/** Return the number of tile definitions in this tile asset. */
+	virtual int32 GetNumTileDefs() const;
+
+	/** Return the edge type for a tile def and direction. */
+	virtual FGameplayTag GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDirection Direction) const;
+
+	/** Return the actor class to spawn for a tile def. */
+	virtual TSubclassOf<AActor> GetTileDefActorClass(int32 TileDefIndex) const;
+
+	/** Return true if an edge is interior to this tile, meaning it faces another tile in the same asset. */
+	virtual bool IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direction) const;
 };

@@ -6,7 +6,6 @@
 #include "WFCTypes.generated.h"
 
 
-enum class EWFCGeneratorStepPhase : uint8;
 /** Represents a direction pointing from one cell in a grid to another. */
 typedef int32 FWFCGridDirection;
 
@@ -15,21 +14,6 @@ typedef int32 FWFCCellIndex;
 
 /** Represents the id of a tile that can be selected for one cell of a grid. */
 typedef int32 FWFCTileId;
-
-
-/** An array of tile ids */
-USTRUCT(BlueprintType)
-struct FWFCTileIdArray
-{
-	GENERATED_BODY()
-
-	FWFCTileIdArray()
-	{
-	}
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<int32> TileIds;
-};
 
 
 UENUM(BlueprintType)

@@ -166,11 +166,11 @@ void UWFCTagCountConstraint::Initialize(UWFCGenerator* InGenerator)
 		const int32 TileMaxCount = GetTileMaxCount(TileAsset);
 		if (TileMaxCount > 0)
 		{
-			const FWFCTileIdArray IdArray = AssetModel->GetTileIdsForAsset(TileAsset);
+			const TArray<FWFCTileId> IdArray = AssetModel->GetTileIdsForAsset(TileAsset);
 
 			// only apply the max count limitation to the tile at 0,0,0 within the asset,
 			// so that large tiles don't count against it multiple times.
-			TArray<FWFCTileId> OriginTileIds = IdArray.TileIds.FilterByPredicate([AssetModel](const int32& TileId)
+			TArray<FWFCTileId> OriginTileIds = IdArray.FilterByPredicate([AssetModel](const int32& TileId)
 			{
 				const FWFCModelAssetTile* AssetTile = AssetModel->GetTile<FWFCModelAssetTile>(TileId);
 				check(AssetTile != nullptr);

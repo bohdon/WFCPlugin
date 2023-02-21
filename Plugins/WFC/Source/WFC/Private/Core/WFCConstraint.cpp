@@ -8,21 +8,26 @@
 
 void UWFCConstraint::Initialize(UWFCGenerator* InGenerator)
 {
-	check(InGenerator != nullptr);
-
 	Generator = InGenerator;
+	check(Generator != nullptr);
+
 	Grid = Generator->GetGrid();
+	check(Grid != nullptr);
+
 	Model = Generator->GetModel();
+	check(Model != nullptr);
 }
 
 void UWFCConstraint::Reset()
 {
-	// implement in subclass
 }
 
 void UWFCConstraint::NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection)
 {
-	// implement in subclass to respond to cell changes
+}
+
+void UWFCConstraint::NotifyCellBan(FWFCCellIndex CellIndex, FWFCTileId BannedTileId)
+{
 }
 
 bool UWFCConstraint::Next()

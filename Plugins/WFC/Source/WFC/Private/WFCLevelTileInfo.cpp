@@ -121,7 +121,7 @@ TMap<EWFCTile3DEdge, FGameplayTag> AWFCLevelTileInfo::GetAllEdgeTypesForTile(FIn
 
 	for (uint8 Direction = 0; Direction < static_cast<uint8>(EWFCTile3DEdge::MAX); ++Direction)
 	{
-		const FIntVector DirectionVector = UWFCGrid3D::GetDirectionVector(Direction);
+		const FIntVector DirectionVector = UWFCGrid3D::GetDirectionVectorStatic(Direction);
 		const FGameplayTag EdgeType = GetEdgeTypeForTile(TileLocation, DirectionVector);
 		EWFCTile3DEdge Edge = static_cast<EWFCTile3DEdge>(Direction);
 

@@ -67,8 +67,9 @@ public:
 	FIntPoint GetLocationForCellIndex(int32 CellIndex) const;
 
 	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const override;
+	virtual FTransform GetCellWorldTransform(int32 CellIndex, int32 Rotation) const override;
+	virtual FTransform GetRotationTransform(int32 Rotation) const override;
+	virtual FIntVector GetDirectionVector(int32 Direction) const override;
 
-	/** Return the 2d vector for a direction */
-	UFUNCTION(BlueprintPure)
-	static FIntPoint GetDirectionVector(int32 Direction);
+	static FIntPoint GetDirectionVectorStatic(int32 Direction);
 };

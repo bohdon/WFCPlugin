@@ -33,6 +33,9 @@ public:
 	/** Called when a cell's tile candidates have changed */
 	virtual void NotifyCellChanged(FWFCCellIndex CellIndex, bool bHasSelection);
 
+	/** Called when a tile candidate has been banned from a cell. */
+	virtual void NotifyCellBan(FWFCCellIndex CellIndex, FWFCTileId BannedTileId);
+
 	/**
 	 * Update the constraint
 	 * @return True if the constraint made any changes, false otherwise.

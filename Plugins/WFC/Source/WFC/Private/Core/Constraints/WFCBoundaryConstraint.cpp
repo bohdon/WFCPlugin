@@ -6,6 +6,7 @@
 #include "WFCModule.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
+#include "Core/WFCModel.h"
 
 
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Boundary Constraint - Mappings"), STAT_WFCBoundaryConstraintMappings, STATGROUP_WFC);
@@ -20,10 +21,26 @@ void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 
 	bDidApplyInitialConstraint = false;
 
+	SCOPE_LOG_TIME_FUNC();
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintMappings, 0);
 	SET_FLOAT_STAT(STAT_WFCBoundaryConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintNumChecks, 0);
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintNumBans, 0);
+
+	const int32 NumDirections = Grid->GetNumDirections();
+
+	for (FWFCTileId TileId = 0; TileId <= Model->GetMaxTileId(); ++TileId)
+	{
+		const FWFCModelAssetTile& Tile = Model->GetTileRef<FWFCModelAssetTile>(TileId);
+
+		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
+		{
+			if (!CanAssetTileBeNextToGridBoundary(Tile, Direction))
+			{
+				AddProhibitedAdjacentBoundaryMapping(TileId, Direction);
+			}
+		}
+	}
 }
 
 void UWFCBoundaryConstraint::Reset()
@@ -41,6 +58,31 @@ void UWFCBoundaryConstraint::AddProhibitedAdjacentBoundaryMapping(FWFCTileId Til
 {
 	INC_DWORD_STAT(STAT_WFCBoundaryConstraintMappings);
 	TileBoundaryProhibitionMap.FindOrAdd(TileId).AddUnique(Direction);
+}
+
+bool UWFCBoundaryConstraint::CanAssetTileBeNextToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const
+{
+	const UWFCTileAsset* TileAsset = Tile.TileAsset.Get();
+	if (!TileAsset)
+	{
+		return false;
+	}
+
+	if (TileAsset->IsInteriorEdge(Tile.TileDefIndex, Direction))
+	{
+		// for large tiles, only exterior edges can be against the boundary
+		return false;
+	}
+
+	// check edge type
+	const FGameplayTag EdgeType = TileAsset->GetTileDefEdgeType(Tile.TileDefIndex, Direction);
+	const FGameplayTagContainer EdgeTypeTags(EdgeType);
+	if (!EdgeTypeQuery.IsEmpty() && !EdgeTypeQuery.Matches(EdgeTypeTags))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 bool UWFCBoundaryConstraint::CanTileBeAdjacentToBoundaries(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const

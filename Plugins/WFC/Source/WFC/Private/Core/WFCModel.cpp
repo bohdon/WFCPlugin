@@ -11,12 +11,6 @@ void UWFCModel::Initialize(const UObject* TileData)
 
 void UWFCModel::GenerateTiles()
 {
-	// implement in subclass
-}
-
-void UWFCModel::ConfigureGenerator(UWFCGenerator* Generator)
-{
-	// implement in subclass
 }
 
 FWFCTileId UWFCModel::AddTile(TSharedPtr<FWFCModelTile> Tile)

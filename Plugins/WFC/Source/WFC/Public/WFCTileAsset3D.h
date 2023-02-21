@@ -104,6 +104,16 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	FWFCTileDef3D GetTileDefByIndex(int32 Index) const;
+
+	virtual void GetAllowedRotations(TArray<int32>& OutRotations) const override;
+	virtual int32 GetNumTileDefs() const override { return TileDefs.Num(); }
+	virtual FGameplayTag GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDirection Direction) const override;
+	virtual TSubclassOf<AActor> GetTileDefActorClass(int32 TileDefIndex) const override;
+	virtual bool IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direction) const override;
+
+#if WITH_EDITOR
+	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) override;
+#endif
 };
 
 

@@ -4,12 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WFCAssetModel.h"
-#include "WFCTileAsset.h"
-#include "WFCTileAsset3D.h"
 #include "WFCTileModel3D.generated.h"
-
-class UWFCAdjacencyConstraint;
-class UWFCGrid;
 
 
 /**
@@ -22,10 +17,4 @@ class WFC_API UWFCTileModel3D : public UWFCAssetModel
 
 public:
 	UWFCTileModel3D();
-
-	virtual void GenerateTiles() override;
-	virtual bool CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB,
-	                                FWFCGridDirection Direction, const UWFCGrid* Grid) const override;
-	virtual bool CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
-	                                             const UWFCGrid* Grid, const UWFCGenerator* Generator) const override;
 };

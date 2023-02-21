@@ -99,7 +99,7 @@ void UWFCFixedTile3DConstraint::Initialize(UWFCGenerator* InGenerator)
 		// get the tile id
 		int32 TileDefIndex;
 		FixedTile.TileAsset->GetTileDefByLocation(FIntVector(0, 0, 0), TileDefIndex);
-		const FWFCTileId TileId = AssetModel->GetTileIdForAssetTileDef(FixedTile.TileAsset, TileDefIndex, FixedTile.TileRotation);
+		const FWFCTileId TileId = AssetModel->GetTileIdForAssetAndRotation(FixedTile.TileAsset, TileDefIndex, FixedTile.TileRotation);
 		if (!GetGenerator()->IsValidTileId(TileId))
 		{
 			UE_LOG(LogWFC, Warning, TEXT("Found invalid fixed tile constraint in %s, tile asset and rotation not found: %s, %d"),

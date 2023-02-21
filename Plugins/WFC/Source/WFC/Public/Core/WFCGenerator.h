@@ -213,6 +213,12 @@ protected:
 	virtual void InitializeCells();
 
 	bool AreAllCellsSelected() const;
+
+	/** Called when a tile candidate has been banned from a cell. */
+	virtual void OnCellCandidateBanned(FWFCCellIndex CellIndex, FWFCTileId BannedTileId);
+
+	/** Called when tile candidates have been banned from a cell. */
+	virtual void OnCellCandidatesBanned(FWFCCellIndex CellIndex, const TArray<FWFCTileId>& BannedTileIds);
 	
 	/** Called when the candidates for a cell have changed. */
 	virtual void OnCellChanged(FWFCCellIndex CellIndex);

@@ -3,8 +3,6 @@
 
 #include "Core/Grids/WFCGrid3D.h"
 
-#include "DrawDebugHelpers.h"
-
 
 UWFCGrid3DConfig::UWFCGrid3DConfig()
 	: Dimensions(FIntVector(10, 10, 10)),
@@ -138,7 +136,12 @@ FIntVector UWFCGrid3D::GetLocationForCellIndex(int32 CellIndex) const
 	return FIntVector(X, Y, Z);
 }
 
-FIntVector UWFCGrid3D::GetDirectionVector(int32 Direction)
+FIntVector UWFCGrid3D::GetDirectionVector(int32 Direction) const
+{
+	return GetDirectionVectorStatic(Direction);
+}
+
+FIntVector UWFCGrid3D::GetDirectionVectorStatic(int32 Direction)
 {
 	switch (Direction)
 	{
@@ -177,12 +180,18 @@ FVector UWFCGrid3D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 
 FTransform UWFCGrid3D::GetCellWorldTransform(int32 CellIndex, int32 Rotation) const
 {
-	const FRotator Rotator = FVector(GetDirectionVector(RotateDirection(0, Rotation))).ToOrientationRotator();
-	// rotate around the center of a cell
-	FTransform Result = FTransform(Rotator, CellSize * 0.5f);
-
-	// then offset by the cell location, and remove the half cell size to un-center
+	FTransform Result = GetRotationTransform(Rotation);
 	const FVector Offset = FVector(GetLocationForCellIndex(CellIndex)) * CellSize;
-	Result.AddToTranslation(Offset - CellSize * 0.5f);
+	Result.AddToTranslation(Offset);
 	return Result;
+}
+
+FTransform UWFCGrid3D::GetRotationTransform(int32 Rotation) const
+{
+	const FVector ForwardVector = FVector(GetDirectionVector(RotateDirection(0, Rotation)));
+	// apply rotation to a location offset by half cell size, then offset again to keep transform in 0..1 range
+	const FMatrix Matrix = FTranslationMatrix(CellSize * -0.5f) *
+		FRotationMatrix::MakeFromX(ForwardVector) *
+		FTranslationMatrix(CellSize * 0.5f);
+	return FTransform(Matrix);
 }

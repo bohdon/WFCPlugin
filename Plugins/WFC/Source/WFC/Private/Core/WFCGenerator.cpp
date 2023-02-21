@@ -275,7 +275,7 @@ void UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
 		FWFCCell& Cell = GetCell(CellIndex);
 		if (Cell.RemoveCandidate(TileId))
 		{
-			OnCellChanged(CellIndex);
+			OnCellCandidateBanned(CellIndex, TileId);
 		}
 	}
 }
@@ -284,22 +284,22 @@ void UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
 {
 	if (IsValidCellIndex(CellIndex) && TileIds.Num() > 0)
 	{
-		bool bWasChanged = false;
+		TArray<FWFCTileId> BannedTileIds;
+		BannedTileIds.Reserve(TileIds.Num());
 
 		FWFCCell& Cell = GetCell(CellIndex);
 		for (const int32& TileId : TileIds)
 		{
-			bWasChanged |= Cell.RemoveCandidate(TileId);
-
-			if (bWasChanged)
+			if (Cell.RemoveCandidate(TileId))
 			{
+				BannedTileIds.Add(TileId);
 				++NumBansThisUpdate;
 			}
 		}
 
-		if (bWasChanged)
+		if (!BannedTileIds.IsEmpty())
 		{
-			OnCellChanged(CellIndex);
+			OnCellCandidatesBanned(CellIndex, BannedTileIds);
 		}
 	}
 }
@@ -363,6 +363,29 @@ int32 UWFCGenerator::GetNumCellCandidates(int32 CellIndex) const
 		return GetCell(CellIndex).TileCandidates.Num();
 	}
 	return 0;
+}
+
+void UWFCGenerator::OnCellCandidateBanned(FWFCCellIndex CellIndex, FWFCTileId BannedTileId)
+{
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		Constraint->NotifyCellBan(CellIndex, BannedTileId);
+	}
+
+	OnCellChanged(CellIndex);
+}
+
+void UWFCGenerator::OnCellCandidatesBanned(FWFCCellIndex CellIndex, const TArray<FWFCTileId>& BannedTileIds)
+{
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		for (const FWFCTileId& BannedTileId : BannedTileIds)
+		{
+			Constraint->NotifyCellBan(CellIndex, BannedTileId);
+		}
+	}
+
+	OnCellChanged(CellIndex);
 }
 
 void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)

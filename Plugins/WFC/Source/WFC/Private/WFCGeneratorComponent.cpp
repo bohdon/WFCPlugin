@@ -89,11 +89,6 @@ bool UWFCGeneratorComponent::Initialize()
 		Generator->Initialize(Config);
 	}
 
-	{
-		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::ConfigureGenerator"), *Model->GetClass()->GetName()), nullptr);
-		Model->ConfigureGenerator(Generator);
-	}
-
 	return true;
 }
 

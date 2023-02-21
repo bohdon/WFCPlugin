@@ -101,4 +101,13 @@ public:
 	 */
 	UFUNCTION(BlueprintPure)
 	virtual FTransform GetCellWorldTransform(int32 CellIndex, int32 Rotation) const;
+
+
+	/** Return the transform used to apply a rotation to a tile. */
+	UFUNCTION(BlueprintPure)
+	virtual FTransform GetRotationTransform(int32 Rotation) const;
+
+	/** Return the 3d vector for a direction, if applicable for this grid. */
+	UFUNCTION(BlueprintPure)
+	virtual FIntVector GetDirectionVector(int32 Direction) const;
 };

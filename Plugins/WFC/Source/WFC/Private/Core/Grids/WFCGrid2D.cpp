@@ -93,7 +93,7 @@ FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCG
 	}
 
 	const FIntPoint GridLocation = GetLocationForCellIndex(CellIndex);
-	const FIntPoint MovedGridLocation = GridLocation + GetDirectionVector(Direction);
+	const FIntPoint MovedGridLocation = GridLocation + GetDirectionVectorStatic(Direction);
 	return GetCellIndexForLocation(MovedGridLocation);
 }
 
@@ -114,6 +114,29 @@ FIntPoint UWFCGrid2D::GetLocationForCellIndex(int32 CellIndex) const
 	return FIntPoint(X, Y);
 }
 
+FIntVector UWFCGrid2D::GetDirectionVector(int32 Direction) const
+{
+	const FIntPoint Vector2D = GetDirectionVectorStatic(Direction);
+	return FIntVector(Vector2D.X, Vector2D.Y, 0);
+}
+
+FIntPoint UWFCGrid2D::GetDirectionVectorStatic(int32 Direction)
+{
+	switch (Direction)
+	{
+	case 0:
+		return FIntPoint(1, 0);
+	case 1:
+		return FIntPoint(0, 1);
+	case 2:
+		return FIntPoint(-1, 0);
+	case 3:
+		return FIntPoint(0, -1);
+	default:
+		return FIntPoint();
+	}
+}
+
 FVector UWFCGrid2D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 {
 	if (!IsValidCellIndex(CellIndex))
@@ -131,19 +154,22 @@ FVector UWFCGrid2D::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 	return CellWorldLocation;
 }
 
-FIntPoint UWFCGrid2D::GetDirectionVector(int32 Direction)
+FTransform UWFCGrid2D::GetCellWorldTransform(int32 CellIndex, int32 Rotation) const
 {
-	switch (Direction)
-	{
-	case 0:
-		return FIntPoint(1, 0);
-	case 1:
-		return FIntPoint(0, 1);
-	case 2:
-		return FIntPoint(-1, 0);
-	case 3:
-		return FIntPoint(0, -1);
-	default:
-		return FIntPoint();
-	}
+	FTransform Result = GetRotationTransform(Rotation);
+	const FVector CellSize3D = FVector(CellSize.X, CellSize.Y, 0);
+	const FVector Offset = FVector(GetLocationForCellIndex(CellIndex)) * CellSize3D;
+	Result.AddToTranslation(Offset);
+	return Result;
+}
+
+FTransform UWFCGrid2D::GetRotationTransform(int32 Rotation) const
+{
+	const FVector CellSize3D = FVector(CellSize.X, CellSize.Y, 0);
+	const FVector ForwardVector = FVector(GetDirectionVector(RotateDirection(0, Rotation)));
+	// apply rotation to a location offset by half cell size, then offset again to keep transform in 0..1 range
+	const FMatrix Matrix = FTranslationMatrix(CellSize3D * -0.5f) *
+		FRotationMatrix::MakeFromX(ForwardVector) *
+		FTranslationMatrix(CellSize3D * 0.5f);
+	return FTransform(Matrix);
 }

@@ -4,22 +4,9 @@
 #include "WFCAssetModel.h"
 
 #include "WFCModule.h"
+#include "WFCTileSet.h"
 #include "Core/WFCGenerator.h"
-#include "Core/WFCGrid.h"
-#include "Core/Constraints/WFCAdjacencyConstraint.h"
-#include "Core/Constraints/WFCBoundaryConstraint.h"
 
-DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Adjacency Constraint - Mapping Checks"), STAT_WFCAdjacencyConstraintMappingChecks, STATGROUP_WFC);
-
-
-void UWFCAssetModel::AddTileFromAsset(const UWFCTileAsset* TileAsset, TSharedPtr<FWFCModelTile> Tile)
-{
-	if (Tile.IsValid())
-	{
-		AddTile(Tile);
-		TileAssetIds.FindOrAdd(TileAsset).TileIds.AddUnique(Tile->Id);
-	}
-}
 
 const UWFCTileSet* UWFCAssetModel::GetAssetTileSet() const
 {
@@ -35,19 +22,44 @@ FWFCModelAssetTile UWFCAssetModel::GetAssetTile(int32 TileId) const
 	return FWFCModelAssetTile();
 }
 
-FWFCTileIdArray UWFCAssetModel::GetTileIdsForAsset(const UWFCTileAsset* TileAsset) const
+TArray<int32> UWFCAssetModel::GetTileIdsForAsset(const UWFCTileAsset* TileAsset) const
 {
-	return TileAssetIds.FindRef(TileAsset);
+	if (!CachedTileIdsByAsset.Contains(TileAsset))
+	{
+		return TArray<int32>();
+	}
+	TArray<int32> Result;
+	const TArray<TArray<FWFCTileId>>& TileDefArrays = CachedTileIdsByAsset[TileAsset];
+	for (const TArray<FWFCTileId>& Elem : TileDefArrays)
+	{
+		Result.Append(Elem);
+	}
+	return Result;
 }
 
-int32 UWFCAssetModel::GetTileIdForAssetTileDef(const UWFCTileAsset* TileAsset, int32 TileDefIndex, int32 Rotation) const
+TArray<int32> UWFCAssetModel::GetTileIdsForAssetAndDef(const UWFCTileAsset* TileAsset, int32 TileDefIndex) const
 {
-	FWFCTileIdArray TileIds = GetTileIdsForAsset(TileAsset);
-	for (const FWFCTileId TileId : TileIds.TileIds)
+	// TODO: make sure this works with weak ptr index
+	if (!CachedTileIdsByAsset.Contains(TileAsset))
+	{
+		return TArray<int32>();
+	}
+	const TArray<TArray<FWFCTileId>>& TileDefArrays = CachedTileIdsByAsset[TileAsset];
+	if (!TileDefArrays.IsValidIndex(TileDefIndex))
+	{
+		return TArray<int32>();
+	}
+	return TileDefArrays[TileDefIndex];
+}
+
+int32 UWFCAssetModel::GetTileIdForAssetAndRotation(const UWFCTileAsset* TileAsset, int32 TileDefIndex, int32 Rotation) const
+{
+	TArray<FWFCTileId> TileIds = GetTileIdsForAssetAndDef(TileAsset, TileDefIndex);
+	for (const FWFCTileId TileId : TileIds)
 	{
 		if (const FWFCModelAssetTile* Tile = GetTile<FWFCModelAssetTile>(TileId))
 		{
-			if (Tile->TileDefIndex == TileDefIndex && Tile->Rotation == Rotation)
+			if (Tile->Rotation == Rotation)
 			{
 				return TileId;
 			}
@@ -56,16 +68,51 @@ int32 UWFCAssetModel::GetTileIdForAssetTileDef(const UWFCTileAsset* TileAsset, i
 	return INDEX_NONE;
 }
 
-void UWFCAssetModel::ConfigureGenerator(UWFCGenerator* Generator)
+void UWFCAssetModel::GenerateTiles()
 {
-	if (UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>())
+	Super::GenerateTiles();
+
+	const UWFCTileSet* TileSet = GetAssetTileSet();
+	if (!TileSet)
 	{
-		ConfigureAdjacencyConstraint(Generator, AdjacencyConstraint);
+		UE_LOG(LogWFC, Error, TEXT("%s requires a UWFCTileSet, got %s"),
+		       *GetClass()->GetName(),
+		       *GetNameSafe(TileDataRef.Get()));
+		return;
 	}
-	if (UWFCBoundaryConstraint* BoundaryConstraint = Generator->GetConstraint<UWFCBoundaryConstraint>())
+
+	const UWFCTileSetTagWeightsConfig* TagWeights = TileSet->GetConfig<UWFCTileSetTagWeightsConfig>();
+
+	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
 	{
-		ConfigureBoundaryConstraint(Generator, BoundaryConstraint);
+		TArray<int32> AllowedRotations;
+		// currently only supporting yaw rotation
+		TileAsset->GetAllowedRotations(AllowedRotations);
+
+		// for each possible tile asset rotation...
+		for (const int32& Rotation : AllowedRotations)
+		{
+			// for each tile def in the asset
+			const int32 NumDefs = TileAsset->GetNumTileDefs();
+			// iterate all tiles of the asset
+			for (int32 TileDefIdx = 0; TileDefIdx < NumDefs; ++TileDefIdx)
+			{
+				// TODO: add virtual func to construct tiles to support subclasses
+				TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
+				if (TagWeights)
+				{
+					Tile->Weight = TagWeights->GetTileWeight(TileAsset);
+				}
+				Tile->TileAsset = TileAsset;
+				Tile->Rotation = Rotation;
+				Tile->TileDefIndex = TileDefIdx;
+
+				AddTile(Tile);
+			}
+		}
 	}
+
+	CacheAssetTileLookup();
 }
 
 FString UWFCAssetModel::GetTileDebugString(FWFCTileId TileId) const
@@ -77,89 +124,30 @@ FString UWFCAssetModel::GetTileDebugString(FWFCTileId TileId) const
 	return Super::GetTileDebugString(TileId);
 }
 
-void UWFCAssetModel::ConfigureAdjacencyConstraint(const UWFCGenerator* Generator, UWFCAdjacencyConstraint* AdjacencyConstraint) const
+void UWFCAssetModel::CacheAssetTileLookup()
 {
-	SCOPE_LOG_TIME(TEXT("UWFCAssetModel::ConfigureAdjacencyConstraint"), nullptr);
-	SET_DWORD_STAT(STAT_WFCAdjacencyConstraintMappingChecks, 0);
-
-	const UWFCGrid* Grid = Generator->GetGrid();
-	check(Grid != nullptr);
-
-	const int32 NumDirections = Grid->GetNumDirections();
-
-	// TODO: blacklist interior tile/edge pairs and compare only externals, then iterate internals directly and add mappings
-
-	// iterate over all distinct pairs of tiles, including reflectivity, comparing socket types for compatibility
-	for (FWFCTileId TileIdA = 0; TileIdA <= GetMaxTileId(); ++TileIdA)
+	const UWFCTileSet* TileSet = GetAssetTileSet();
+	if (!TileSet)
 	{
-		const FWFCModelAssetTile& TileA = GetTileRef<FWFCModelAssetTile>(TileIdA);
-
-		// compare A <-> A for each direction
-		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
-		{
-			INC_DWORD_STAT(STAT_WFCAdjacencyConstraintMappingChecks);
-
-			if (CanTilesBeAdjacent(TileA, TileA, Direction, Grid))
-			{
-				AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdA);
-			}
-		}
-
-		for (FWFCTileId TileIdB = TileIdA + 1; TileIdB <= GetMaxTileId(); ++TileIdB)
-		{
-			const FWFCModelAssetTile& TileB = GetTileRef<FWFCModelAssetTile>(TileIdB);
-
-			// compare A <-> B for each direction
-			for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
-			{
-				INC_DWORD_STAT(STAT_WFCAdjacencyConstraintMappingChecks);
-
-				if (CanTilesBeAdjacent(TileA, TileB, Direction, Grid))
-				{
-					AdjacencyConstraint->AddAdjacentTileMapping(TileIdA, Direction, TileIdB);
-
-					// add opposite directly as well
-					const FWFCGridDirection OppositeDirection = Grid->GetOppositeDirection(Direction);
-					AdjacencyConstraint->AddAdjacentTileMapping(TileIdB, OppositeDirection, TileIdA);
-				}
-			}
-		}
+		return;
 	}
 
-	AdjacencyConstraint->LogDebugInfo();
-}
-
-bool UWFCAssetModel::CanTilesBeAdjacent(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB, FWFCGridDirection Direction,
-                                        const UWFCGrid* Grid) const
-{
-	return false;
-}
-
-void UWFCAssetModel::ConfigureBoundaryConstraint(const UWFCGenerator* Generator, UWFCBoundaryConstraint* BoundaryConstraint) const
-{
-	SCOPE_LOG_TIME(TEXT("UWFCAssetModel::ConfigureBoundaryConstraint"), nullptr);
-
-	const UWFCGrid* Grid = Generator->GetGrid();
-	check(Grid != nullptr);
-
-	const int32 NumDirections = Grid->GetNumDirections();
-
-	for (FWFCTileId TileId = 0; TileId <= GetMaxTileId(); ++TileId)
+	// cached ids is indexed by [TileAsset][TileDefIdx], which then contains an array of all tile def ids
+	// initialize the cache with all tiles and enough room for all their defs
+	CachedTileIdsByAsset.Empty(TileSet->TileAssets.Num());
+	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
 	{
-		const FWFCModelAssetTile& Tile = GetTileRef<FWFCModelAssetTile>(TileId);
-
-		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
-		{
-			if (!CanTileBeAdjacentToGridBoundary(Tile, Direction, Grid, Generator))
-			{
-				BoundaryConstraint->AddProhibitedAdjacentBoundaryMapping(TileId, Direction);
-			}
-		}
+		const int32 NumDefs = TileAsset->GetNumTileDefs();
+		CachedTileIdsByAsset.Add(TWeakObjectPtr<const UWFCTileAsset>(TileAsset)).AddZeroed(NumDefs);
 	}
-}
 
-bool UWFCAssetModel::CanTileBeAdjacentToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction,
-                                                     const UWFCGrid* Grid, const UWFCGenerator* Generator) const
-{
-	return true;
+	// iterate all tiles and assign ids
+	for (const TSharedPtr<FWFCModelTile>& Tile : GetTiles())
+	{
+		const FWFCModelAssetTile* AssetTile = static_cast<FWFCModelAssetTile*>(Tile.Get());
+		check(AssetTile != nullptr);
+		check(AssetTile->TileAsset.IsValid());
+
+		CachedTileIdsByAsset[AssetTile->TileAsset][AssetTile->TileDefIndex].Add(AssetTile->Id);
+	}
 }

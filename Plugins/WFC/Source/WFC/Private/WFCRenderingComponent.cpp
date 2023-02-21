@@ -7,7 +7,7 @@
 #include "WFCGeneratorComponent.h"
 #include "Core/WFCGenerator.h"
 #include "Core/CellSelectors/WFCEntropyCellSelector.h"
-#include "Core/Constraints/WFCAdjacencyConstraint.h"
+#include "Core/Constraints/WFCEdgeConstraint.h"
 #include "Core/Grids/WFCGrid2D.h"
 #include "Core/Grids/WFCGrid3D.h"
 
@@ -46,6 +46,7 @@ void UWFCRenderingComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// TODO: determine correct way to keep renderer up to date
 	MarkRenderStateDirty();
 }
 
@@ -91,7 +92,7 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 		const UWFCGenerator* Generator = GeneratorComp->GetGenerator();
 		const UWFCGrid* Grid = Generator->GetGrid();
 		const UWFCEntropyCellSelector* EntropySelector = Generator->GetCellSelector<UWFCEntropyCellSelector>();
-		const UWFCAdjacencyConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCAdjacencyConstraint>();
+		const UWFCEdgeConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCEdgeConstraint>();
 
 		const FLinearColor OpenColor = FLinearColor(0.5f, 0.1f, 1.f);
 		const FLinearColor CollapsedColor = FLinearColor(0.7f, 1.f, 0.7f);

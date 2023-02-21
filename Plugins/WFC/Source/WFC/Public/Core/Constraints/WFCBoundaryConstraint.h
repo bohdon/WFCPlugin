@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "WFCTileAsset.h"
 #include "Core/WFCConstraint.h"
 #include "WFCBoundaryConstraint.generated.h"
 
@@ -30,6 +31,8 @@ public:
 	 * Add a mapping that prohibits a tile from being placed next to a grid boundary for an outgoing direction.
 	 */
 	void AddProhibitedAdjacentBoundaryMapping(FWFCTileId TileId, FWFCGridDirection Direction);
+
+	bool CanAssetTileBeNextToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const;
 
 protected:
 	/** Map of tiles and the outgoing directions for which they are prohibited from being adjacent to the grid boundary. */

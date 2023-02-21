@@ -66,10 +66,10 @@ public:
 	UFUNCTION(BlueprintPure)
 	FIntVector GetLocationForCellIndex(int32 CellIndex) const;
 
-	/** Return the 2d vector for a direction */
-	UFUNCTION(BlueprintPure)
-	static FIntVector GetDirectionVector(int32 Direction);
-
 	virtual FVector GetCellWorldLocation(int32 CellIndex, bool bCenter) const override;
 	virtual FTransform GetCellWorldTransform(int32 CellIndex, int32 Rotation) const override;
+	virtual FTransform GetRotationTransform(int32 Rotation) const override;
+	virtual FIntVector GetDirectionVector(int32 Direction) const override;
+
+	static FIntVector GetDirectionVectorStatic(int32 Direction);
 };

@@ -65,12 +65,20 @@ FString UWFCGrid::GetCellName(int32 CellIndex) const
 
 FVector UWFCGrid::GetCellWorldLocation(int32 CellIndex, bool bCenter) const
 {
-	// implement in subclass
 	return FVector::ZeroVector;
 }
 
 FTransform UWFCGrid::GetCellWorldTransform(int32 CellIndex, int32 Rotation) const
 {
-	// implement in subclass
 	return FTransform();
+}
+
+FTransform UWFCGrid::GetRotationTransform(int32 Rotation) const
+{
+	return FTransform();
+}
+
+FIntVector UWFCGrid::GetDirectionVector(int32 Direction) const
+{
+	return FIntVector::ZeroValue;
 }

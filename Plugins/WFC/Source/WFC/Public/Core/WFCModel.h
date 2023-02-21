@@ -7,10 +7,6 @@
 #include "UObject/Object.h"
 #include "WFCModel.generated.h"
 
-class UWFCGenerator;
-
-
-// TODO: rename UWFCTileGenerator
 
 /**
  * A model which contains all possible tiles and tile set info.
@@ -30,10 +26,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void GenerateTiles();
 
-	/** Configure a generator for use with this model's tile data */
-	UFUNCTION(BlueprintCallable)
-	virtual void ConfigureGenerator(UWFCGenerator* Generator);
-
 	UFUNCTION(BlueprintPure)
 	int32 GetNumTiles() const { return Tiles.Num(); }
 
@@ -52,6 +44,18 @@ public:
 	{
 		return static_cast<T*>(GetTile(TileId));
 	}
+
+	/** Return a tile reference by id cast to a type. */
+	template <typename T>
+	const T& GetTileRef(FWFCTileId TileId) const
+	{
+		T* TilePtr = GetTile<T>(TileId);
+		check(TilePtr != nullptr);
+		return *TilePtr;
+	}
+
+	/** Return all the tiles in this model. */
+	const TArray<TSharedPtr<FWFCModelTile>>& GetTiles() const { return Tiles; }
 
 	/** Return the tile data object cast to a type. */
 	template <class T>
@@ -76,13 +80,4 @@ protected:
 
 	/** All tile weights, by tile id. */
 	TArray<float> TileWeights;
-
-	/** Return a tile reference by id cast to a type. */
-	template <typename T>
-	const T& GetTileRef(FWFCTileId TileId) const
-	{
-		T* TilePtr = GetTile<T>(TileId);
-		check(TilePtr != nullptr);
-		return *TilePtr;
-	}
 };
