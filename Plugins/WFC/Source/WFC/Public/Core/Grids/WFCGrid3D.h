@@ -56,6 +56,7 @@ public:
 	virtual FWFCGridDirection GetOppositeDirection(FWFCGridDirection Direction) const override;
 	virtual FWFCGridDirection RotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
 	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const override;
+	virtual int32 CombineRotations(int32 RotationA, int32 RotationB) const override;
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const override;
 
 	/** Return the cell index for a grid location */

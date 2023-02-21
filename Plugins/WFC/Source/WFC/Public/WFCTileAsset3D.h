@@ -108,6 +108,7 @@ public:
 	virtual void GetAllowedRotations(TArray<int32>& OutRotations) const override;
 	virtual int32 GetNumTileDefs() const override { return TileDefs.Num(); }
 	virtual FGameplayTag GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDirection Direction) const override;
+	virtual int32 GetTileDefInDirection(int32 TileDefIndex, FWFCGridDirection Direction) const override;
 	virtual TSubclassOf<AActor> GetTileDefActorClass(int32 TileDefIndex) const override;
 	virtual bool IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direction) const override;
 

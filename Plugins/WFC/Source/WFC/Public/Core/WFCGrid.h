@@ -74,6 +74,9 @@ public:
 	/** Return a direction applying the inverse of the given rotation. */
 	virtual FWFCGridDirection InverseRotateDirection(FWFCGridDirection Direction, int32 Rotation) const;
 
+	/** Return a rotation combined with a delta rotation. */
+	virtual int32 CombineRotations(int32 RotationA, int32 RotationB) const;
+
 	/** Return the index of the cell that is one unit in a direction from another cell. */
 	virtual FWFCCellIndex GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const;
 

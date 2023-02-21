@@ -52,6 +52,20 @@ FGameplayTag UWFCTileAsset2D::GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDir
 	return TileDefs[TileDefIndex].EdgeTypes[static_cast<EWFCTile2DEdge>(Direction)];
 }
 
+int32 UWFCTileAsset2D::GetTileDefInDirection(int32 TileDefIndex, FWFCGridDirection Direction) const
+{
+	check(TileDefs.IsValidIndex(TileDefIndex));
+	const FIntPoint TargetLocation = TileDefs[TileDefIndex].Location + UWFCGrid2D::GetDirectionVectorStatic(Direction);
+	for (int32 Idx = 0; Idx < TileDefs.Num(); ++Idx)
+	{
+		if (TileDefs[Idx].Location == TargetLocation)
+		{
+			return Idx;
+		}
+	}
+	return INDEX_NONE;
+}
+
 TSubclassOf<AActor> UWFCTileAsset2D::GetTileDefActorClass(int32 TileDefIndex) const
 {
 	check(TileDefs.IsValidIndex(TileDefIndex));

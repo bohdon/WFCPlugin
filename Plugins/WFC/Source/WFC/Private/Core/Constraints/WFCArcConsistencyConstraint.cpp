@@ -195,12 +195,15 @@ void UWFCArcConsistencyConstraint::LogDebugInfo() const
 	for (FWFCTileId TileId = 0; TileId < Model->GetNumTiles(); ++TileId)
 	{
 		const FString TileStr = Model->GetTileDebugString(TileId);
-		UE_LOG(LogWFC, VeryVerbose, TEXT("%s allowed tiles..."), *TileStr);
+		UE_LOG(LogWFC, VeryVerbose, TEXT("%s allowed tiles:"), *TileStr);
 
 		const auto& AllowedDirections = AllowedTiles[TileId];
 		for (FWFCGridDirection Direction = 0; Direction < Grid->GetNumDirections(); ++Direction)
 		{
-			const FString DirectionStr = Grid->GetDirectionName(Direction);
+			// log the opposite direction, since allowed tiles are stored as an 'incoming' direction
+			// but it makes more sense to read this as the 'direction from this tile'
+			const FWFCGridDirection InvDirection = Grid->GetOppositeDirection(Direction);
+			const FString DirectionStr = Grid->GetDirectionName(InvDirection);
 
 			TArray<FString> TileStrs;
 			const auto& ThisAllowedTiles = AllowedDirections[Direction];
@@ -209,7 +212,7 @@ void UWFCArcConsistencyConstraint::LogDebugInfo() const
 				TileStrs.Add(FString::FromInt(AllowedTileId));
 			}
 
-			UE_LOG(LogWFC, VeryVerbose, TEXT("    %s -> %s"), *DirectionStr, *FString::Join(TileStrs, TEXT(", ")));
+			UE_LOG(LogWFC, VeryVerbose, TEXT("    %s: %s"), *DirectionStr, *FString::Join(TileStrs, TEXT(", ")));
 		}
 	}
 }

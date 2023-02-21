@@ -84,6 +84,11 @@ FWFCGridDirection UWFCGrid2D::InverseRotateDirection(FWFCGridDirection Direction
 	return RotateDirection(Direction, InvRotation);
 }
 
+int32 UWFCGrid2D::CombineRotations(int32 RotationA, int32 RotationB) const
+{
+	return (RotationA + RotationB) % 4;
+}
+
 FWFCCellIndex UWFCGrid2D::GetCellIndexInDirection(FWFCCellIndex CellIndex, FWFCGridDirection Direction) const
 {
 	if (!IsValidCellIndex(CellIndex) || !IsValidDirection(Direction))

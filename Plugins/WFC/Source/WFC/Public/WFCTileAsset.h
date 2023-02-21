@@ -74,6 +74,9 @@ public:
 	/** Return the edge type for a tile def and direction. */
 	virtual FGameplayTag GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDirection Direction) const;
 
+	/** Return the index of a neighbor tile def in this asset for a direction. */
+	virtual int32 GetTileDefInDirection(int32 TileDefIndex, FWFCGridDirection Direction) const;
+
 	/** Return the actor class to spawn for a tile def. */
 	virtual TSubclassOf<AActor> GetTileDefActorClass(int32 TileDefIndex) const;
 

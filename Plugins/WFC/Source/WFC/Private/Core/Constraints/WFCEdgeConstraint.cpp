@@ -24,18 +24,18 @@ void UWFCEdgeConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
-	bDidApplyInitialConstraint = false;
-	AdjacentCellDirsToCheck.Reset();
-
-	SCOPE_LOG_TIME_FUNC();
-	SET_DWORD_STAT(STAT_WFCEdgeConstraintMappingChecks, 0);
-
-	const UWFCAssetModel* AssetModel = Cast<UWFCAssetModel>(Model);
+	AssetModel = Cast<UWFCAssetModel>(Model);
 	if (!AssetModel)
 	{
 		UE_LOG(LogWFC, Error, TEXT("WFCEdgeConstraint requires a UWFCAssetModel and tile set."));
 		return;
 	}
+
+	bDidApplyInitialConstraint = false;
+	AdjacentCellDirsToCheck.Reset();
+
+	SCOPE_LOG_TIME_FUNC();
+	SET_DWORD_STAT(STAT_WFCEdgeConstraintMappingChecks, 0);
 
 	const FWFCGridDirection NumDirections = Grid->GetNumDirections();
 
@@ -52,20 +52,29 @@ void UWFCEdgeConstraint::Initialize(UWFCGenerator* InGenerator)
 		const int32 NumDefsA = TileAssetA->GetNumTileDefs();
 		for (int32 DefIdxA = 0; DefIdxA < NumDefsA; ++DefIdxA)
 		{
+			TArray<FWFCTileId> TileAIds = AssetModel->GetTileIdsForAssetAndDef(TileAssetA, DefIdxA);
+
 			// for each direction out of tile a...
-			for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
+			for (FWFCGridDirection LocalOutDirectionA = 0; LocalOutDirectionA < NumDirections; ++LocalOutDirectionA)
 			{
-				if (TileAssetA->IsInteriorEdge(DefIdxA, Direction))
+				if (TileAssetA->IsInteriorEdge(DefIdxA, LocalOutDirectionA))
 				{
-					// it's an interior edge, don't check all other tiles, just map it to the other tile in this asset
-					// TODO: find the other tile and add to allowed tiles
+					// interior edge of a large tile, add the exact neighbors
+					AddInteriorAllowedTiles(TileAssetA, DefIdxA, LocalOutDirectionA, TileAIds);
 					continue;
 				}
 
-				FGameplayTag EdgeTypeA = TileAssetA->GetTileDefEdgeType(DefIdxA, Direction);
-				const FWFCGridDirection InvDirection = Grid->GetOppositeDirection(Direction);
+				const FWFCGridDirection LocalInDirectionA = Grid->GetOppositeDirection(LocalOutDirectionA);
+				FGameplayTag EdgeTypeA = TileAssetA->GetTileDefEdgeType(DefIdxA, LocalOutDirectionA);
 
-				// for each other asset, without re-checking same pairs, but including reflectivity...
+				// TODO (bsayre): put this logic in the grid somewhere?
+				// don't attempt to try to match up XY and Z directions, since only yaw rotation is supported
+				const bool bIsLateralDirection = LocalOutDirectionA < 4;
+				// either use 0..3 for lateral directions, or 4..5 for vertical
+				const FWFCGridDirection MinBDir = bIsLateralDirection ? 0 : 4;
+				const FWFCGridDirection MaxBDir = bIsLateralDirection ? 3 : 5;
+
+				// for each other asset (without re-checking same pairs, but including reflectivity)...
 				for (int32 AssetIdxB = AssetIdxA; AssetIdxB < TileSet->TileAssets.Num(); ++AssetIdxB)
 				{
 					const UWFCTileAsset* TileAssetB = TileSet->TileAssets[AssetIdxB];
@@ -78,37 +87,26 @@ void UWFCEdgeConstraint::Initialize(UWFCGenerator* InGenerator)
 					const int32 NumDefsB = TileAssetB->GetNumTileDefs();
 					for (int32 DefIdxB = 0; DefIdxB < NumDefsB; ++DefIdxB)
 					{
-						if (TileAssetB->IsInteriorEdge(DefIdxB, InvDirection))
-						{
-							continue;
-						}
-						FGameplayTag EdgeTypeB = TileAssetB->GetTileDefEdgeType(DefIdxB, InvDirection);
-						if (!AreEdgesCompatible(EdgeTypeA, EdgeTypeB))
-						{
-							continue;
-						}
-
-						// add allowed tile for this pairing, for each rotation of tile def a
-						TArray<FWFCTileId> TileAIds = AssetModel->GetTileIdsForAssetAndDef(TileAssetA, DefIdxA);
 						TArray<FWFCTileId> TileBIds = AssetModel->GetTileIdsForAssetAndDef(TileAssetB, DefIdxB);
-						for (const FWFCTileId TileAId : TileAIds)
+
+						// for each (compatible) direction out of tile b...
+						for (FWFCGridDirection LocalOutDirectionB = MinBDir; LocalOutDirectionB <= MaxBDir; ++LocalOutDirectionB)
 						{
-							const FWFCModelAssetTile& AssetTileA = Model->GetTileRef<FWFCModelAssetTile>(TileAId);
-							const FWFCGridDirection RotatedDirection = Grid->RotateDirection(Direction, AssetTileA.Rotation);
-							const FWFCGridDirection RotatedInvDirection = Grid->RotateDirection(InvDirection, AssetTileA.Rotation);
+							// TODO: early out if the tile can never be rotated such that this direction would line up with A
 
-							for (const FWFCTileId TileBId : TileBIds)
+							if (TileAssetB->IsInteriorEdge(DefIdxB, LocalOutDirectionB))
 							{
-								const FWFCModelAssetTile& AssetTileB = Model->GetTileRef<FWFCModelAssetTile>(TileBId);
-								if (AssetTileA.Rotation != AssetTileB.Rotation)
-								{
-									continue;
-								}
-
-								// using 'incoming' direction, and add both A<-B and B<-A
-								AddAllowedTileForDirection(TileAId, RotatedInvDirection, TileBId);
-								AddAllowedTileForDirection(TileBId, RotatedDirection, TileAId);
+								continue;
 							}
+
+							FGameplayTag EdgeTypeB = TileAssetB->GetTileDefEdgeType(DefIdxB, LocalOutDirectionB);
+							if (!AreEdgesCompatible(EdgeTypeA, EdgeTypeB))
+							{
+								continue;
+							}
+
+							// edges match, add A<-B and B<-A for all rotation variations with the same local directions
+							AddMatchingEdgeAllowedTiles(TileAIds, LocalInDirectionA, TileBIds, LocalOutDirectionB);
 						}
 					}
 				}
@@ -123,4 +121,64 @@ bool UWFCEdgeConstraint::AreEdgesCompatible(const FGameplayTag& EdgeA, const FGa
 {
 	INC_DWORD_STAT(STAT_WFCEdgeConstraintMappingChecks);
 	return EdgeA.IsValid() && EdgeB.IsValid() && EdgeA == EdgeB;
+}
+
+void UWFCEdgeConstraint::AddInteriorAllowedTiles(const UWFCTileAsset* TileAsset, int32 TileDefIndex,
+                                                 FWFCGridDirection Direction, const TArray<FWFCTileId>& TileDefIds)
+{
+	check(TileAsset != nullptr);
+	check(AssetModel != nullptr);
+
+	const FWFCGridDirection InDirection = Grid->GetOppositeDirection(Direction);
+	// it's an interior edge, don't check all other tiles, just map it to the other tile in this asset
+	const int32 NeighborDefIdxA = TileAsset->GetTileDefInDirection(TileDefIndex, Direction);
+	// if the direction was interior, neighbor must be valid
+	check(NeighborDefIdxA != INDEX_NONE);
+
+	TArray<FWFCTileId> NeighborTileIds = AssetModel->GetTileIdsForAssetAndDef(TileAsset, NeighborDefIdxA);
+
+	for (const FWFCTileId& TileIdA : TileDefIds)
+	{
+		const FWFCModelAssetTile& AssetTileA = Model->GetTileRef<FWFCModelAssetTile>(TileIdA);
+		const FWFCGridDirection WorldInDirectionA = Grid->RotateDirection(InDirection, AssetTileA.Rotation);
+		const FWFCGridDirection WorldInDirectionB = Grid->GetOppositeDirection(WorldInDirectionA);
+
+		// for each rotation of neighbor tile def a...
+		for (const FWFCTileId& TileIdB : NeighborTileIds)
+		{
+			const FWFCModelAssetTile& AssetTileB = Model->GetTileRef<FWFCModelAssetTile>(TileIdB);
+			if (AssetTileA.Rotation == AssetTileB.Rotation)
+			{
+				// add both A<-B and B<-A
+				AddAllowedTileForDirection(TileIdA, WorldInDirectionA, TileIdB);
+				AddAllowedTileForDirection(TileIdB, WorldInDirectionB, TileIdA);
+			}
+		}
+	}
+}
+
+void UWFCEdgeConstraint::AddMatchingEdgeAllowedTiles(const TArray<FWFCTileId>& TileAIds, FWFCGridDirection InDirectionA,
+                                                     const TArray<FWFCTileId>& TileBIds, FWFCGridDirection OutDirectionB)
+{
+	for (const FWFCTileId TileIdA : TileAIds)
+	{
+		const FWFCModelAssetTile& AssetTileA = Model->GetTileRef<FWFCModelAssetTile>(TileIdA);
+		const FWFCGridDirection WorldInDirectionA = Grid->RotateDirection(InDirectionA, AssetTileA.Rotation);
+		const FWFCGridDirection WorldInDirectionB = Grid->GetOppositeDirection(WorldInDirectionA);
+
+		for (const FWFCTileId TileIdB : TileBIds)
+		{
+			// ensure the local direction being used for tile b is the same (edge still matches)
+			// meaning a matching rotation with tile a, or a direction where rotation doesn't matter (+/-Z)
+			const FWFCModelAssetTile& AssetTileB = Model->GetTileRef<FWFCModelAssetTile>(TileIdB);
+			if (Grid->InverseRotateDirection(WorldInDirectionA, AssetTileB.Rotation) != OutDirectionB)
+			{
+				continue;
+			}
+
+			// add both A<-B and B<-A
+			AddAllowedTileForDirection(TileIdA, WorldInDirectionA, TileIdB);
+			AddAllowedTileForDirection(TileIdB, WorldInDirectionB, TileIdA);
+		}
+	}
 }

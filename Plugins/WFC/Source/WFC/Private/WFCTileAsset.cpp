@@ -35,6 +35,11 @@ FGameplayTag UWFCTileAsset::GetTileDefEdgeType(int32 TileDefIndex, FWFCGridDirec
 	return FGameplayTag::EmptyTag;
 }
 
+int32 UWFCTileAsset::GetTileDefInDirection(int32 TileDefIndex, FWFCGridDirection Direction) const
+{
+	return INDEX_NONE;
+}
+
 TSubclassOf<AActor> UWFCTileAsset::GetTileDefActorClass(int32 TileDefIndex) const
 {
 	return nullptr;
