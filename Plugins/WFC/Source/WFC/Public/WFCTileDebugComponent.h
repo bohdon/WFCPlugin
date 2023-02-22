@@ -18,7 +18,8 @@ struct FWFCTileDebugInstance
 	GENERATED_BODY()
 
 	FWFCTileDebugInstance()
-		: TileId(INDEX_NONE)
+		: Location(FVector::ZeroVector),
+		  TileId(INDEX_NONE)
 	{
 	}
 
@@ -50,8 +51,23 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	AActor* GeneratorActor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (ClampMin="0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Setter, Meta = (ClampMin="0"))
 	int32 TileId;
+
+	UFUNCTION(BlueprintSetter)
+	void SetTileId(int32 NewTileId);
+
+	/** Automatically spawn tile actors when the tile id changes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAutoSpawn;
+
+	/** Delay before auto spawning to prevent hitches when rapidly changing id. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AutoSpawnDelay;
+
+	/** The spacing to place between tiles, as a factor of cell size. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Spacing;
 
 	UFUNCTION(BlueprintPure)
 	int32 GetMaxTileId() const;
@@ -60,7 +76,6 @@ public:
 	FVector GetCellSize() const;
 
 	virtual void PostInitProperties() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UWFCGeneratorComponent* GetGeneratorComp() const;
 
@@ -68,8 +83,12 @@ public:
 
 	const UWFCAssetModel* GetAssetModel() const;
 
+	/** Return the debug string for the currently selected tile. */
+	UFUNCTION(BlueprintPure)
+	FString GetTileDebugString() const;
+
 	UFUNCTION(BlueprintCallable)
-	virtual void GetDebugTileInstances(TArray<FWFCTileDebugInstance>& OutTileInstances);
+	virtual void GetDebugTileInstances(TArray<FWFCTileDebugInstance>& OutTileInstances) const;
 
 	/** Spawn the tile actors for the currently previewed tiles. */
 	UFUNCTION(BlueprintCallable, CallInEditor)
@@ -79,10 +98,15 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor)
 	void ClearTileActors();
 
+	UFUNCTION(BlueprintNativeEvent)
+	void OnTileIdChanged();
+
 #if UE_ENABLE_DEBUG_DRAWING
 	virtual FDebugRenderSceneProxy* CreateDebugSceneProxy() override;
 	void AddTileSceneProxy(FDebugRenderSceneProxy* DebugProxy, const FWFCModelAssetTile* AssetTile, FVector Location);
 #endif // UE_ENABLE_DEBUG_DRAWING
+
+	virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -91,6 +115,8 @@ public:
 protected:
 	// cached value of current cell size
 	FVector CachedCellSize;
+
+	FTimerHandle AutoSpawnTimer;
 
 	UPROPERTY(Transient)
 	TArray<AActor*> SpawnedActors;

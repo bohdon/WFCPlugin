@@ -97,21 +97,43 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 		const FLinearColor OpenColor = FLinearColor(0.5f, 0.1f, 1.f);
 		const FLinearColor CollapsedColor = FLinearColor(0.7f, 1.f, 0.7f);
 
-		// draw all pending adjacency checks
 		if (AdjacencyConstraint)
 		{
-			for (const FWFCCellIndexAndDirection& AdjacencyCellDir : AdjacencyConstraint->GetAdjacentCellDirsToCheck())
+			TMultiMap<FWFCCellIndex, FWFCTileId> BansToPropagateByCell;
+			// draw all pending arc bans to propagate
+			for (const FWFCCellIndexAndTileId& BansToPropagate : AdjacencyConstraint->GetBansToPropagate())
 			{
-				FWFCCellIndex CellIndexA = AdjacencyCellDir.CellIndex;
-				FWFCCellIndex CellIndexB = Grid->GetCellIndexInDirection(AdjacencyCellDir.CellIndex, AdjacencyCellDir.Direction);
+				BansToPropagateByCell.Add(BansToPropagate.CellIndex, BansToPropagate.TileId);
+			}
+
+			TArray<FWFCCellIndex> BanCellsToPropagate;
+			BansToPropagateByCell.GetKeys(BanCellsToPropagate);
+			for (FWFCCellIndex CellIndex : BanCellsToPropagate)
+			{
+				// draw black sphere around the cell
+				const FVector CellCenterA = GridTransform.TransformPosition(Grid->GetCellWorldLocation(CellIndex, true));
+				DebugProxy->Spheres.Emplace(GridCellSize.GetMax(), CellCenterA, FColor::Black);
+
+				// draw banned tile ids still to propagate above the cell
+				TArray<FWFCTileId> TileIds;
+				BansToPropagateByCell.MultiFind(CellIndex, TileIds);
+				FString TileIdsStr = GetTileIdsDebugString(TileIds, Settings.MaxTileIdCount);
+				const FVector CellTop = CellCenterA + FVector::UpVector * GridCellSize.GetMax();
+				DebugProxy->Texts.Emplace(TileIdsStr, CellTop, FLinearColor::Black);
+			}
+
+			// draw arc cells visited during last update
+			for (const FWFCCellIndexAndDirection& CellVisited : AdjacencyConstraint->GetVisitedDuringPropagation())
+			{
+				FWFCCellIndex CellIndexB = Grid->GetCellIndexInDirection(CellVisited.CellIndex, CellVisited.Direction);
 				if (!Grid->IsValidCellIndex(CellIndexB))
 				{
 					continue;
 				}
 
-				const FVector CellCenterA = GridTransform.TransformPosition(Grid->GetCellWorldLocation(CellIndexA, true));
+				const FVector CellCenterA = GridTransform.TransformPosition(Grid->GetCellWorldLocation(CellVisited.CellIndex, true));
 				const FVector CellCenterB = GridTransform.TransformPosition(Grid->GetCellWorldLocation(CellIndexB, true));
-				DebugProxy->ArrowLines.Emplace(CellCenterA, CellCenterB, FColor::White);
+				DebugProxy->ArrowLines.Emplace(CellCenterA, CellCenterB, FColor::Red);
 			}
 		}
 
@@ -148,9 +170,9 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 				CellHalfSize *= 0.01f;
 				Color = FLinearColor::Red;
 				TextColor = FLinearColor::Red;
-				if (Settings.bShowNumCandidates)
+				if (Settings.bShowCandidates)
 				{
-					CellTextLines.Add(TEXT("0"));
+					CellTextLines.Add(GetTileIdsDebugString(TArray<FWFCTileId>(), Settings.MaxTileIdCount));
 				}
 			}
 			else
@@ -160,9 +182,9 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 				CellHalfSize *= Openness * 0.8f + 0.2f;
 				Color = FLinearColor::LerpUsingHSV(CollapsedColor, OpenColor, Openness);
 				TextColor = Color * 1.5f;
-				if (Settings.bShowNumCandidates)
+				if (Settings.bShowCandidates)
 				{
-					CellTextLines.Add(FString::FromInt(NumCandidates));
+					CellTextLines.Add(GetTileIdsDebugString(Cell.TileCandidates, Settings.MaxTileIdCount));
 				}
 				if (Settings.bShowEntropy && EntropySelector)
 				{
@@ -186,15 +208,6 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 			if (!CellTextLines.IsEmpty())
 			{
 				DebugProxy->Texts.Emplace(FString::Join(CellTextLines, TEXT("\n")), CellCenter, TextColor);
-			}
-
-			// draw adjacency constraint updates
-			if (AdjacencyConstraint && AdjacencyConstraint->GetAdjacenciesEnforcedThisUpdate().Contains(CellIndex))
-			{
-				// this cell's change caused a ban in another cell during the last update, draw the connection
-				FWFCCellIndex AffectedCellIndex = AdjacencyConstraint->GetAdjacenciesEnforcedThisUpdate().FindRef(CellIndex);
-				const FVector AffectedCellCenter = GridTransform.TransformPosition(Grid->GetCellWorldLocation(AffectedCellIndex, true));
-				DebugProxy->ArrowLines.Emplace(CellCenter, AffectedCellCenter, FColor::Red);
 			}
 		}
 	}
@@ -263,4 +276,25 @@ void UWFCRenderingComponent::GetGridDimensionsAndSize(FIntVector& OutDimensions,
 			OutCellSize = FVector(Grid2DConfig->CellSize.X, Grid2DConfig->CellSize.Y, 1);
 		}
 	}
+}
+
+FString UWFCRenderingComponent::GetTileIdsDebugString(const TArray<FWFCTileId>& TileIds, int32 MaxCount) const
+{
+	if (TileIds.IsEmpty())
+	{
+		return FString(TEXT("(none)"));
+	}
+
+	if (TileIds.Num() > MaxCount)
+	{
+		return FString::Printf(TEXT("%d tile(s)"), TileIds.Num());
+	}
+
+	// list every tile id
+	TArray<FString> TileIdStrs;
+	for (const FWFCTileId& TileId : TileIds)
+	{
+		TileIdStrs.Add(FString::FromInt(TileId));
+	}
+	return FString::Join(TileIdStrs, TEXT(", "));
 }

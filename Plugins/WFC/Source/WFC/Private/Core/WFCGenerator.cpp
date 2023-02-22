@@ -67,7 +67,7 @@ void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
 		InitializeConstraints();
 		InitializeCellSelectors();
 
-		State = EWFCGeneratorState::InProgress;
+		SetState(EWFCGeneratorState::InProgress);
 
 		bIsInitialized = true;
 	}
@@ -215,7 +215,7 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 		NumBansThisUpdate = 0;
 		if (Constraint->Next())
 		{
-			UE_LOG(LogWFC, VeryVerbose, TEXT("Applied constraint: %s, bans: %d"), *Constraint->GetName(), NumBansThisUpdate);
+			UE_LOG(LogWFC, Verbose, TEXT("Applied constraint: %s, bans: %d"), *Constraint->GetName(), NumBansThisUpdate);
 			bDidApplyConstraints = true;
 			if (State == EWFCGeneratorState::Finished)
 			{

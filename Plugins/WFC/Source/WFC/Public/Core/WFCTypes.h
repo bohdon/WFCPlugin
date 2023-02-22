@@ -113,6 +113,41 @@ struct FWFCCellIndexAndDirection
 };
 
 
+struct FWFCCellIndexAndTileId
+{
+	FWFCCellIndexAndTileId()
+		: CellIndex(INDEX_NONE),
+		  TileId(INDEX_NONE)
+	{
+	}
+
+	FWFCCellIndexAndTileId(FWFCCellIndex InCellIndex, FWFCGridDirection InTileId)
+		: CellIndex(InCellIndex),
+		  TileId(InTileId)
+	{
+	}
+
+	FWFCCellIndex CellIndex;
+
+	FWFCTileId TileId;
+
+	bool operator==(const FWFCCellIndexAndTileId& Other) const
+	{
+		return CellIndex == Other.CellIndex && TileId == Other.TileId;
+	}
+
+	bool operator!=(const FWFCCellIndexAndTileId& Other) const
+	{
+		return !(operator==(Other));
+	}
+
+	friend uint32 GetTypeHash(const FWFCCellIndexAndTileId& IndexAndDirection)
+	{
+		return HashCombine(GetTypeHash(IndexAndDirection.CellIndex), GetTypeHash(IndexAndDirection.TileId));
+	}
+};
+
+
 /**
  * Contains all relevant data about a tile needed to select tiles
  * and generate final output from the model once selected.

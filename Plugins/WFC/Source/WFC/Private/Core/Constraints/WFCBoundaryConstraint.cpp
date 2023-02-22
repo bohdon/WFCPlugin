@@ -29,13 +29,13 @@ void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 
 	const int32 NumDirections = Grid->GetNumDirections();
 
-	for (FWFCTileId TileId = 0; TileId <= Model->GetMaxTileId(); ++TileId)
+	for (FWFCTileId TileId = 0; TileId < Model->GetNumTiles(); ++TileId)
 	{
 		const FWFCModelAssetTile& Tile = Model->GetTileRef<FWFCModelAssetTile>(TileId);
 
 		for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 		{
-			if (!CanAssetTileBeNextToGridBoundary(Tile, Direction))
+			if (!CanTileBeNextToBoundary(Tile, Direction))
 			{
 				AddProhibitedAdjacentBoundaryMapping(TileId, Direction);
 			}
@@ -60,7 +60,7 @@ void UWFCBoundaryConstraint::AddProhibitedAdjacentBoundaryMapping(FWFCTileId Til
 	TileBoundaryProhibitionMap.FindOrAdd(TileId).AddUnique(Direction);
 }
 
-bool UWFCBoundaryConstraint::CanAssetTileBeNextToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const
+bool UWFCBoundaryConstraint::CanTileBeNextToBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const
 {
 	const UWFCTileAsset* TileAsset = Tile.TileAsset.Get();
 	if (!TileAsset)
@@ -68,14 +68,17 @@ bool UWFCBoundaryConstraint::CanAssetTileBeNextToGridBoundary(const FWFCModelAss
 		return false;
 	}
 
-	if (TileAsset->IsInteriorEdge(Tile.TileDefIndex, Direction))
+	// convert grid direction to local space for checking edge types within the tile asset
+	const FWFCGridDirection LocalDirection = Grid->InverseRotateDirection(Direction, Tile.Rotation);
+
+	if (TileAsset->IsInteriorEdge(Tile.TileDefIndex, LocalDirection))
 	{
 		// for large tiles, only exterior edges can be against the boundary
 		return false;
 	}
 
 	// check edge type
-	const FGameplayTag EdgeType = TileAsset->GetTileDefEdgeType(Tile.TileDefIndex, Direction);
+	const FGameplayTag EdgeType = TileAsset->GetTileDefEdgeType(Tile.TileDefIndex, LocalDirection);
 	const FGameplayTagContainer EdgeTypeTags(EdgeType);
 	if (!EdgeTypeQuery.IsEmpty() && !EdgeTypeQuery.Matches(EdgeTypeTags))
 	{
@@ -85,20 +88,17 @@ bool UWFCBoundaryConstraint::CanAssetTileBeNextToGridBoundary(const FWFCModelAss
 	return true;
 }
 
-bool UWFCBoundaryConstraint::CanTileBeAdjacentToBoundaries(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const
+bool UWFCBoundaryConstraint::IsTileBoundaryDirectionProhibited(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const
 {
 	const TArray<FWFCGridDirection>* ProhibitedDirectionsPtr = TileBoundaryProhibitionMap.Find(TileId);
 	if (ProhibitedDirectionsPtr)
 	{
-		for (const FWFCGridDirection& Direction : BoundaryDirections)
+		return ProhibitedDirectionsPtr->ContainsByPredicate([BoundaryDirections](const FWFCGridDirection& Direction)
 		{
-			if (ProhibitedDirectionsPtr->Contains(Direction))
-			{
-				return false;
-			}
-		}
+			return BoundaryDirections.Contains(Direction);
+		});
 	}
-	return true;
+	return false;
 }
 
 bool UWFCBoundaryConstraint::Next()
@@ -120,11 +120,12 @@ bool UWFCBoundaryConstraint::Next()
 
 	const int32 NumDirections = Grid->GetNumDirections();
 
-	if (CachedTileBans.IsEmpty())
+	// if tiles to ban is already filled out, don't recalculate it, since it
+	// will be the same each time this constraint is first run.
+	if (TilesToBan.IsEmpty())
 	{
 		for (FWFCCellIndex CellIndex = 0; CellIndex < Generator->GetNumCells(); ++CellIndex)
 		{
-			// this cell is adjacent to the boundary for the outgoing Direction
 			const FWFCCell& CellToCheck = Generator->GetCell(CellIndex);
 			if (CellToCheck.HasSelection())
 			{
@@ -132,7 +133,7 @@ bool UWFCBoundaryConstraint::Next()
 				continue;
 			}
 
-			// find all boundary directions first to reduce some iterations
+			// find all boundary directions
 			TArray<FWFCGridDirection> BoundaryDirections;
 			for (FWFCGridDirection Direction = 0; Direction < NumDirections; ++Direction)
 			{
@@ -143,45 +144,42 @@ bool UWFCBoundaryConstraint::Next()
 				}
 			}
 
-			if (BoundaryDirections.Num() > 0)
+			if (BoundaryDirections.IsEmpty())
 			{
-				// cell is next to one or more boundaries
-				TArray<FWFCTileId> TileIdsToBan;
-				for (int32 Idx = 0; Idx < CellToCheck.TileCandidates.Num(); ++Idx)
+				// cell is not next to a boundary
+				continue;
+			}
+
+			TArray<FWFCTileId> TileIdsToBan;
+			for (const FWFCTileId& TileId : CellToCheck.TileCandidates)
+			{
+				// check each tile for any prohibited boundary directions
+				INC_DWORD_STAT(STAT_WFCBoundaryConstraintNumChecks);
+
+				if (IsTileBoundaryDirectionProhibited(TileId, BoundaryDirections))
 				{
-					// check each tile for any prohibited boundary directions
-					const FWFCTileId& TileId = CellToCheck.TileCandidates[Idx];
-
-					INC_DWORD_STAT(STAT_WFCBoundaryConstraintNumChecks);
-
-					if (!CanTileBeAdjacentToBoundaries(TileId, BoundaryDirections))
-					{
-						TileIdsToBan.AddUnique(TileId);
-					}
+					TileIdsToBan.Add(TileId);
 				}
+			}
 
-				if (TileIdsToBan.Num() > 0)
-				{
-					// boundary constraint runs once on initialization, and is deterministic,
-					// so cache the bans in case the constraint needs to be applied again
-					CachedTileBans.Add(CellIndex, TileIdsToBan);
-					Generator->BanMultiple(CellIndex, TileIdsToBan);
-					INC_DWORD_STAT_BY(STAT_WFCBoundaryConstraintNumBans, TileIdsToBan.Num());
-					bDidMakeChanges = true;
-				}
+			if (TileIdsToBan.Num() > 0)
+			{
+				TilesToBan.Add(CellIndex, TileIdsToBan);
 			}
 		}
 	}
-	else
+
+	// apply bans
+	if (!TilesToBan.IsEmpty())
 	{
-		// apply cached bans
-		for (const auto& Elem : CachedTileBans)
+		for (const auto& Elem : TilesToBan)
 		{
 			Generator->BanMultiple(Elem.Key, Elem.Value);
 			INC_DWORD_STAT_BY(STAT_WFCBoundaryConstraintNumBans, Elem.Value.Num());
-			bDidMakeChanges = true;
 		}
+		bDidMakeChanges = true;
 	}
+
 
 	bDidApplyInitialConstraint = true;
 

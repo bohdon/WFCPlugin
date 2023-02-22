@@ -27,7 +27,7 @@ public:
 	/** Return true if two edges are allowed to be next to each other. */
 	virtual bool AreEdgesCompatible(const FGameplayTag& EdgeA, const FGameplayTag& EdgeB) const;
 
-	/** Return true if two tiles can be next to each other based on their edge types. */
+	/** Return true if TileB can be placed next to TileA in a direction going from A -> B. */
 	virtual bool AreTilesCompatible(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB, FWFCGridDirection Direction) const;
 
 protected:

@@ -46,32 +46,39 @@ public:
 	 * Add an entry to the table that allows a tile to be placed next to another tile
 	 * for an incoming direction (from AllowedTileId -> TileId).
 	 * @param TileId The tile that defines a constraint for other tiles adjacent to it.
-	 * @param Direction The direction relative to the tile.
+	 * @param Direction The direction from Tile -> AllowedTileId.
 	 * @param AllowedTileId The tile that is allowed to exist adjacent to the tile.
 	 */
 	void AddAllowedTileForDirection(FWFCTileId TileId, FWFCGridDirection Direction, FWFCTileId AllowedTileId);
 
-	void MarkCellForAdjacencyCheck(FWFCCellIndex CellIndex);
+	/** Return the array of all valid tiles that can be placed next to a tile in a direction. */
+	const TArray<FWFCTileId>& GetAllowedTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const;
 
-	const TArray<FWFCCellIndexAndDirection>& GetAdjacentCellDirsToCheck() const { return AdjacentCellDirsToCheck; }
+	const TArray<FWFCCellIndexAndTileId>& GetBansToPropagate() const { return BansToPropagate; }
 
-	const TMap<FWFCCellIndex, FWFCCellIndex>& GetAdjacenciesEnforcedThisUpdate() const { return AdjacenciesEnforcedThisUpdate; }
-
-	/** Return the array of all valid tiles that an be placed next to a tile in a direction */
-	TArray<FWFCTileId> GetValidAdjacentTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const;
+	const TArray<FWFCCellIndexAndDirection>& GetVisitedDuringPropagation() const { return VisitedDuringPropagation; }
 
 protected:
-	/** Contains the allowed list of tiles for each [tile][direction]. */
+	/** Contains the allowed list of tiles for each [TileId][Direction]. */
 	TArray<TArray<TArray<FWFCTileId>>> AllowedTiles;
 
-	/** Contains the number of supports for each [cell][tile][direction]. */
-	TArray<TArray<TArray<uint16>>> SupportCounts;
+	/** Contains the number of supports for each [CellIndex][TileId][Direction]. */
+	TArray<TArray<TArray<int16>>> SupportCounts;
 
-	bool bDidApplyInitialConstraint;
+	/** Cached copy of the support counts after initialization for faster resetting. */
+	TArray<TArray<TArray<int16>>> DefaultSupportCounts;
 
-	/** Current list of cells adjacency constraints to check */
-	TArray<FWFCCellIndexAndDirection> AdjacentCellDirsToCheck;
+	/** List of banned tiles per cell that need to be propagated in the next update. */
+	TArray<FWFCCellIndexAndTileId> BansToPropagate;
 
-	/** Map of cells that were affected by this constraint in the last update. */
-	TMap<FWFCCellIndex, FWFCCellIndex> AdjacenciesEnforcedThisUpdate;
+	/** Unique cell directions that were visited during the last propagation. */
+	TArray<FWFCCellIndexAndDirection> VisitedDuringPropagation;
+
+	bool bDidApplyInitialConsistency;
+
+	/** Initialize support counts and check for contradictions. */
+	void ApplyInitialConsistency();
+
+	/** Propagate changes due to banned tiles and ensure consistency. */
+	bool PropagateChanges();
 };

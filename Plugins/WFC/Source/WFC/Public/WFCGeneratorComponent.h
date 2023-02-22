@@ -20,11 +20,12 @@ struct FWFCGeneratorDebugSettings
 
 	FWFCGeneratorDebugSettings()
 		: bShowCellCoordinates(false),
-		  bShowNumCandidates(false),
+		  bShowCandidates(true),
 		  bShowEntropy(false),
 		  DebugEntropyThreshold(2.f),
 		  bShowSelectedTileIds(false),
 		  bHighlightUpdatedCells(true),
+		  MaxTileIdCount(10),
 		  DebugCellScale(FVector(0.6f))
 	{
 	}
@@ -33,7 +34,7 @@ struct FWFCGeneratorDebugSettings
 	bool bShowCellCoordinates;
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bShowNumCandidates;
+	bool bShowCandidates;
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bShowEntropy;
@@ -47,6 +48,10 @@ struct FWFCGeneratorDebugSettings
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bHighlightUpdatedCells;
+
+	/** The maximum number of tile ids to show explicitly before truncating to just a count. */
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	int32 MaxTileIdCount;
 
 	/** Scale applied to cell boxes in addition to dynamic scaling. */
 	UPROPERTY(EditAnywhere, Category = "Debug")

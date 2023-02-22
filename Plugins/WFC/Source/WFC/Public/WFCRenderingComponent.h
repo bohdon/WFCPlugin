@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/WFCTypes.h"
 #include "Debug/DebugDrawComponent.h"
 #include "WFCRenderingComponent.generated.h"
 
@@ -41,4 +42,6 @@ protected:
 
 	UWFCGeneratorComponent* GetGeneratorComponent() const;
 	void GetGridDimensionsAndSize(FIntVector& OutDimensions, FVector& OutCellSize) const;
+
+	FString GetTileIdsDebugString(const TArray<FWFCTileId>& TileIds, int32 MaxCount = 10) const;
 };

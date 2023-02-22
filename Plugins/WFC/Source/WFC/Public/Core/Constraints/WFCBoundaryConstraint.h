@@ -32,7 +32,8 @@ public:
 	 */
 	void AddProhibitedAdjacentBoundaryMapping(FWFCTileId TileId, FWFCGridDirection Direction);
 
-	bool CanAssetTileBeNextToGridBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const;
+	/** Return true if a tile is allowed to be next to a boundary in the given direction. */
+	bool CanTileBeNextToBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const;
 
 protected:
 	/** Map of tiles and the outgoing directions for which they are prohibited from being adjacent to the grid boundary. */
@@ -40,9 +41,9 @@ protected:
 
 	bool bDidApplyInitialConstraint;
 
-	/** Cached map of tiles to ban for each cell. Calculated after the first time this constraint is run incase it needs to re-run */
-	TMap<FWFCCellIndex, TArray<FWFCTileId>> CachedTileBans;
+	/** Cached map of tiles to ban for each cell. Calculated after the first time this constraint is run in case it needs to re-run */
+	TMap<FWFCCellIndex, TArray<FWFCTileId>> TilesToBan;
 
-	/** Return true if a tile is allowed to be adjacent to boundaries in the given outgoing directions. */
-	bool CanTileBeAdjacentToBoundaries(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const;
+	/** Return true if a tile is not allowed to be adjacent to boundaries in the given outgoing directions. */
+	bool IsTileBoundaryDirectionProhibited(FWFCTileId TileId, const TArray<FWFCGridDirection>& BoundaryDirections) const;
 };
