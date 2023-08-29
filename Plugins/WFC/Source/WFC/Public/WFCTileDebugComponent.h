@@ -64,7 +64,7 @@ public:
 	/** Delay before auto spawning to prevent hitches when rapidly changing id. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float AutoSpawnDelay;
-
+	
 	/** The spacing to place between tiles, as a factor of cell size. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Spacing;

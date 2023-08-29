@@ -38,3 +38,12 @@ bool UWFCConstraint::Next()
 void UWFCConstraint::LogDebugInfo() const
 {
 }
+
+UWFCConstraintSnapshot* UWFCConstraint::CreateSnapshot(UObject* Outer) const
+{
+	return nullptr;
+}
+
+void UWFCConstraint::ApplySnapshot(const UWFCConstraintSnapshot* Snapshot)
+{
+}

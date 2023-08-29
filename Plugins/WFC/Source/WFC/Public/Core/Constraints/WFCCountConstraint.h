@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCTileSet.h"
+#include "GameplayTagContainer.h"
 #include "Core/WFCConstraint.h"
 #include "WFCCountConstraint.generated.h"
+
+class UWFCTileAsset;
 
 
 USTRUCT()

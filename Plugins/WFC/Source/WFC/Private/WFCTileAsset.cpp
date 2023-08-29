@@ -49,3 +49,8 @@ bool UWFCTileAsset::IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Directi
 {
 	return false;
 }
+
+const UWFCTilePreviewData* UWFCTileAsset::GetTileDefPreviewData(int32 TileDefIndex) const
+{
+	return nullptr;
+}

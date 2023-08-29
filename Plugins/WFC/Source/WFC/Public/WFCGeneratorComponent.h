@@ -10,7 +10,6 @@
 class UWFCAsset;
 class UWFCGenerator;
 class UWFCGrid;
-class UWFCModel;
 
 
 USTRUCT(BlueprintType)
@@ -79,13 +78,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 StepLimit;
 
+	/** If true, restore the startup snapshot from the WFC Asset if available. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bUseStartupSnapshot;
+
 	/** If true, automatically run the generator on begin play. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutoRun;
 
-	/** Color of the grid in the editor */
+	/** The granularity to use when calling Next. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWFCGeneratorStepGranularity StepGranularity;
+
+	/** Color of the grid when debug drawing. */
 	UPROPERTY(EditAnywhere, Category = "Debug")
-	FLinearColor EditorGridColor;
+	FLinearColor DebugGridColor;
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	FWFCGeneratorDebugSettings DebugSettings;
@@ -94,13 +101,13 @@ public:
 
 	/** Initialize the WFC model and generator */
 	UFUNCTION(BlueprintCallable)
-	bool Initialize();
+	bool Initialize(bool bForce = false);
 
 	/** Return true if the generator is currently initialized. */
 	UFUNCTION(BlueprintPure)
 	bool IsInitialized() const;
 
-	/** Reset the current model and generator. */
+	/** Reset and reinitialize the generator. */
 	UFUNCTION(BlueprintCallable)
 	void ResetGenerator();
 
@@ -110,7 +117,7 @@ public:
 
 	/** Iterate the generator one step. */
 	UFUNCTION(BlueprintCallable)
-	void Next(bool bBreakAfterConstraints = false);
+	void Next();
 
 	/** Return the grid being used by the generator. */
 	UFUNCTION(BlueprintPure)
@@ -162,10 +169,6 @@ public:
 	UWFCGenerator* GetGenerator() const { return Generator; }
 
 protected:
-	/** The model instance. */
-	UPROPERTY(Transient, BlueprintReadOnly)
-	UWFCModel* Model;
-
 	/** The generator instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
 	UWFCGenerator* Generator;

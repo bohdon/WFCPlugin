@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WFCTileAsset.h"
 #include "Core/WFCModel.h"
 #include "WFCAssetModel.generated.h"
 
+class UWFCAsset;
+class UWFCTileAsset;
 class UWFCTileSet;
 
 
@@ -19,9 +20,13 @@ class WFC_API UWFCAssetModel : public UWFCModel
 	GENERATED_BODY()
 
 public:
-	/** Return the tile set as a UWFCTileSet. */
+	/** Return the WFCAsset containing the tile data for this model. */
 	UFUNCTION(BlueprintPure)
-	const UWFCTileSet* GetAssetTileSet() const;
+	const UWFCAsset* GetWFCAsset() const;
+
+	/** Return all tile assets from all tile sets of the WFCAsset. */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	void GetAllTileAssets(TArray<UWFCTileAsset*>& TileAssets) const;
 
 	/** Return a FWFCModelAssetTile by id */
 	UFUNCTION(BlueprintPure)
@@ -38,6 +43,10 @@ public:
 	/** Return the tile id that matches a tile asset, tile def index, and rotation */
 	UFUNCTION(BlueprintCallable)
 	int32 GetTileIdForAssetAndRotation(const UWFCTileAsset* TileAsset, int32 TileDefIndex, int32 Rotation) const;
+
+	/** Return true if a tile should be included. */
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	bool ShouldIncludeTileAsset(UWFCTileAsset* TileAsset) const;
 
 	virtual void GenerateTiles() override;
 

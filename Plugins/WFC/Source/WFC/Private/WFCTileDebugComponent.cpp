@@ -14,6 +14,7 @@
 #include "Core/WFCGrid.h"
 #include "Core/Constraints/WFCArcConsistencyConstraint.h"
 #include "Core/Grids/WFCGrid3D.h"
+#include "LevelInstance/WFCTileLevelInstance.h"
 
 
 UWFCTileDebugComponent::UWFCTileDebugComponent()
@@ -42,14 +43,21 @@ int32 UWFCTileDebugComponent::GetMaxTileId() const
 		{
 			return GeneratorComp->GetGenerator()->GetNumTiles() - 1;
 		}
-		if (GeneratorComp->WFCAsset && GeneratorComp->WFCAsset->TileSet)
+		if (GeneratorComp->WFCAsset)
 		{
 			int32 NumTiles = 0;
-			for (const UWFCTileAsset* TileAsset : GeneratorComp->WFCAsset->TileSet->TileAssets)
+			for (const UWFCTileSet* TileSet : GeneratorComp->WFCAsset->TileSets)
 			{
-				if (TileAsset)
+				if (!TileSet)
 				{
-					NumTiles += TileAsset->GetNumTileDefs() * TileAsset->GetNumRotations();
+					continue;
+				}
+				for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+				{
+					if (TileAsset)
+					{
+						NumTiles += TileAsset->GetNumTileDefs() * TileAsset->GetNumRotations();
+					}
 				}
 			}
 			return NumTiles;
@@ -311,17 +319,20 @@ void UWFCTileDebugComponent::SpawnTileActor(const FWFCModelAssetTile* AssetTile,
 		return;
 	}
 
-	const FTransform Transform = FTransform(GetComponentRotation(), Location);
+	const FTransform Transform = Grid->GetRotationTransform(AssetTile->Rotation) * FTransform(GetComponentRotation(), Location);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AActor* TileActor = GetWorld()->SpawnActor<AActor>(ActorClass, Transform, SpawnParams);
+	if (AWFCTileLevelInstance* TileLevelInstance = Cast<AWFCTileLevelInstance>(TileActor))
+	{
+		// don't auto load level instances, just stick to previews
+		TileLevelInstance->bAutoLoad = false;
+	}
 	if (IWFCTileActorInterface* TileActorInterface = Cast<IWFCTileActorInterface>(TileActor))
 	{
 		TileActorInterface->SetGeneratorComp(GetGeneratorComp());
-		TileActorInterface->SetCell(INDEX_NONE);
-		TileActorInterface->SetTile(AssetTile);
-		TileActorInterface->InitializeTile();
+		TileActorInterface->SetTileAndCell(AssetTile, INDEX_NONE);
 	}
 
 	SpawnedActors.Add(TileActor);

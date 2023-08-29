@@ -71,9 +71,9 @@ public:
 	virtual FString GetTileDebugString(FWFCTileId TileId) const;
 
 protected:
-	/** Weak reference to the tile data that was used to generate tiles. */
+	/** Reference to the tile data that was used to generate tiles. Usually a WFCAsset. */
 	UPROPERTY(Transient)
-	TWeakObjectPtr<const UObject> TileDataRef;
+	TObjectPtr<const UObject> TileDataRef;
 
 	/** All generated tiles. Array index is the same as the tile id. */
 	TArray<TSharedPtr<FWFCModelTile>> Tiles;

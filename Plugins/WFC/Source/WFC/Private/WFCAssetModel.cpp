@@ -3,14 +3,43 @@
 
 #include "WFCAssetModel.h"
 
+#include "WFCAsset.h"
 #include "WFCModule.h"
+#include "WFCTileAsset.h"
 #include "WFCTileSet.h"
-#include "Core/WFCGenerator.h"
+#include "WFCTileSetConfig.h"
 
 
-const UWFCTileSet* UWFCAssetModel::GetAssetTileSet() const
+const UWFCAsset* UWFCAssetModel::GetWFCAsset() const
 {
-	return GetTileData<UWFCTileSet>();
+	return GetTileData<UWFCAsset>();
+}
+
+void UWFCAssetModel::GetAllTileAssets(TArray<UWFCTileAsset*>& TileAssets) const
+{
+	TileAssets.Reset();
+
+	const UWFCAsset* WFCAsset = GetWFCAsset();
+	if (!WFCAsset)
+	{
+		return;
+	}
+
+	for (const UWFCTileSet* TileSet : WFCAsset->TileSets)
+	{
+		if (!TileSet)
+		{
+			continue;
+		}
+
+		for (UWFCTileAsset* TileAsset : TileSet->TileAssets)
+		{
+			if (ShouldIncludeTileAsset(TileAsset))
+			{
+				TileAssets.Add(TileAsset);
+			}
+		}
+	}
 }
 
 FWFCModelAssetTile UWFCAssetModel::GetAssetTile(int32 TileId) const
@@ -68,23 +97,38 @@ int32 UWFCAssetModel::GetTileIdForAssetAndRotation(const UWFCTileAsset* TileAsse
 	return INDEX_NONE;
 }
 
+bool UWFCAssetModel::ShouldIncludeTileAsset_Implementation(UWFCTileAsset* TileAsset) const
+{
+	if (!TileAsset)
+	{
+		return false;
+	}
+	if (const UWFCAsset* WFCAsset = GetWFCAsset())
+	{
+		return WFCAsset->TileTagQuery.IsEmpty() || WFCAsset->TileTagQuery.Matches(TileAsset->OwnedTags);
+	}
+	// no wfc asset so just include everything
+	return true;
+}
+
 void UWFCAssetModel::GenerateTiles()
 {
 	Super::GenerateTiles();
 
-	const UWFCTileSet* TileSet = GetAssetTileSet();
-	if (!TileSet)
-	{
-		UE_LOG(LogWFC, Error, TEXT("%s requires a UWFCTileSet, got %s"),
-		       *GetClass()->GetName(),
-		       *GetNameSafe(TileDataRef.Get()));
-		return;
-	}
+	SCOPE_LOG_TIME_FUNC();
 
-	const UWFCTileSetTagWeightsConfig* TagWeights = TileSet->GetConfig<UWFCTileSetTagWeightsConfig>();
+	const UWFCAsset* WFCAsset = GetWFCAsset();
 
-	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+	TArray<UWFCTileAsset*> TileAssets;
+	GetAllTileAssets(TileAssets);
+
+	const UWFCTileSetTagWeightsConfig* TagWeights = WFCAsset->GetTileConfig<UWFCTileSetTagWeightsConfig>();
+
+	for (const UWFCTileAsset* TileAsset : TileAssets)
 	{
+		const float Weight = TagWeights->GetTileWeight(TileAsset);
+
+		int32 NumTilesGenerated = 0;
 		TArray<int32> AllowedRotations;
 		// currently only supporting yaw rotation
 		TileAsset->GetAllowedRotations(AllowedRotations);
@@ -101,15 +145,18 @@ void UWFCAssetModel::GenerateTiles()
 				TSharedPtr<FWFCModelAssetTile> Tile = MakeShared<FWFCModelAssetTile>();
 				if (TagWeights)
 				{
-					Tile->Weight = TagWeights->GetTileWeight(TileAsset);
+					Tile->Weight = Weight;
 				}
 				Tile->TileAsset = TileAsset;
 				Tile->Rotation = Rotation;
 				Tile->TileDefIndex = TileDefIdx;
 
 				AddTile(Tile);
+				++NumTilesGenerated;
 			}
 		}
+
+		UE_LOG(LogWFC, Verbose, TEXT("Generated %d tiles from %s (Weight: %f)"), NumTilesGenerated, *TileAsset->GetName(), Weight);
 	}
 
 	CacheAssetTileLookup();
@@ -126,16 +173,13 @@ FString UWFCAssetModel::GetTileDebugString(FWFCTileId TileId) const
 
 void UWFCAssetModel::CacheAssetTileLookup()
 {
-	const UWFCTileSet* TileSet = GetAssetTileSet();
-	if (!TileSet)
-	{
-		return;
-	}
+	TArray<UWFCTileAsset*> TileAssets;
+	GetAllTileAssets(TileAssets);
 
 	// cached ids is indexed by [TileAsset][TileDefIdx], which then contains an array of all tile def ids
 	// initialize the cache with all tiles and enough room for all their defs
-	CachedTileIdsByAsset.Empty(TileSet->TileAssets.Num());
-	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+	CachedTileIdsByAsset.Empty(TileAssets.Num());
+	for (const UWFCTileAsset* TileAsset : TileAssets)
 	{
 		const int32 NumDefs = TileAsset->GetNumTileDefs();
 		CachedTileIdsByAsset.Add(TWeakObjectPtr<const UWFCTileAsset>(TileAsset)).AddZeroed(NumDefs);

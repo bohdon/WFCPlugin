@@ -5,7 +5,6 @@
 
 #include "WFCAssetModel.h"
 #include "WFCModule.h"
-#include "WFCTileSet.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 
@@ -17,6 +16,7 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Edge Constraint - Mapping Checks"), STAT_WF
 
 
 UWFCEdgeConstraint::UWFCEdgeConstraint()
+	: bIsInitializedFromTiles(false)
 {
 }
 
@@ -25,18 +25,29 @@ void UWFCEdgeConstraint::Initialize(UWFCGenerator* InGenerator)
 	Super::Initialize(InGenerator);
 
 	AssetModel = Cast<UWFCAssetModel>(Model);
-	if (!AssetModel || !AssetModel->GetAssetTileSet())
+	if (!AssetModel)
 	{
-		UE_LOG(LogWFC, Error, TEXT("WFCEdgeConstraint requires a UWFCAssetModel and tile set."));
+		UE_LOG(LogWFC, Error, TEXT("%s requires a UWFCAssetModel: %s"), *GetClass()->GetName(), *GetNameSafe(GetOuter()));
 		return;
 	}
 
 	SCOPE_LOG_TIME_FUNC();
 	SET_DWORD_STAT(STAT_WFCEdgeConstraintMappingChecks, 0);
 
-	InitializeFromTiles();
+	if (!bIsInitializedFromTiles)
+	{
+		InitializeFromTiles();
+		bIsInitializedFromTiles = true;
+	}
 
 	LogDebugInfo();
+}
+
+void UWFCEdgeConstraint::ApplySnapshot(const UWFCConstraintSnapshot* Snapshot)
+{
+	Super::ApplySnapshot(Snapshot);
+
+	bIsInitializedFromTiles = true;
 }
 
 bool UWFCEdgeConstraint::AreEdgesCompatible(const FGameplayTag& EdgeA, const FGameplayTag& EdgeB) const
@@ -134,14 +145,14 @@ void UWFCEdgeConstraint::InitializeFromAssets()
 	};
 
 	const FWFCGridDirection NumDirections = Grid->GetNumDirections();
-	const UWFCTileSet* TileSet = AssetModel->GetAssetTileSet();
-	check(TileSet != nullptr);
+	TArray<UWFCTileAsset*> TileAssets;
+	AssetModel->GetAllTileAssets(TileAssets);
 
 	// build flat list of tile asset defs so they can be iterated without checking duplicate pairs
 	TArray<FTileAssetDefEdge> TileEdges;
 	// will usually be larger than this but just starting with initial reserve
-	TileEdges.Reserve(TileSet->TileAssets.Num() * NumDirections);
-	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+	TileEdges.Reserve(TileAssets.Num() * NumDirections);
+	for (const UWFCTileAsset* TileAsset : TileAssets)
 	{
 		if (!TileAsset)
 		{

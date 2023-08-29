@@ -32,12 +32,6 @@ public:
 	 */
 	virtual void SetGeneratorComp(UWFCGeneratorComponent* NewGeneratorComp) = 0;
 
-	/** Set the cell index where this tile was selected. */
-	virtual void SetCell(FWFCCellIndex NewCellIndex) = 0;
-
 	/** Set the tile being represented by this actor. */
-	virtual void SetTile(const FWFCModelTile* NewTile) = 0;
-
-	/** Called when all properties have been set and the tile actor should initialize itself. */
-	virtual void InitializeTile() = 0;
+	virtual void SetTileAndCell(const FWFCModelTile* NewTile, FWFCCellIndex NewCellIndex) = 0;
 };

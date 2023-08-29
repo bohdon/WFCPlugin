@@ -19,13 +19,18 @@ void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 {
 	Super::Initialize(InGenerator);
 
-	bDidApplyInitialConstraint = false;
-
 	SCOPE_LOG_TIME_FUNC();
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintMappings, 0);
 	SET_FLOAT_STAT(STAT_WFCBoundaryConstraintTime, 0);
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintNumChecks, 0);
 	SET_DWORD_STAT(STAT_WFCBoundaryConstraintNumBans, 0);
+
+	if (bIsInitialized)
+	{
+		return;
+	}
+
+	bDidApplyInitialConstraint = false;
 
 	const int32 NumDirections = Grid->GetNumDirections();
 
@@ -41,6 +46,8 @@ void UWFCBoundaryConstraint::Initialize(UWFCGenerator* InGenerator)
 			}
 		}
 	}
+
+	bIsInitialized = true;
 }
 
 void UWFCBoundaryConstraint::Reset()
@@ -174,8 +181,12 @@ bool UWFCBoundaryConstraint::Next()
 	{
 		for (const auto& Elem : TilesToBan)
 		{
-			Generator->BanMultiple(Elem.Key, Elem.Value);
 			INC_DWORD_STAT_BY(STAT_WFCBoundaryConstraintNumBans, Elem.Value.Num());
+			if (Generator->BanMultiple(Elem.Key, Elem.Value))
+			{
+				// contradiction
+				return true;
+			}
 		}
 		bDidMakeChanges = true;
 	}
@@ -185,4 +196,17 @@ bool UWFCBoundaryConstraint::Next()
 
 	INC_FLOAT_STAT_BY(STAT_WFCBoundaryConstraintTime, (FPlatformTime::Seconds() - StartTime) * 1000);
 	return bDidMakeChanges;
+}
+
+UWFCConstraintSnapshot* UWFCBoundaryConstraint::CreateSnapshot(UObject* Outer) const
+{
+	UWFCBoundaryConstraintSnapshot* Snapshot = NewObject<UWFCBoundaryConstraintSnapshot>(Outer);
+	Snapshot->bDidApplyInitialConstraint = bDidApplyInitialConstraint;
+	return Snapshot;
+}
+
+void UWFCBoundaryConstraint::ApplySnapshot(const UWFCConstraintSnapshot* Snapshot)
+{
+	const UWFCBoundaryConstraintSnapshot* BoundarySnapshot = Cast<UWFCBoundaryConstraintSnapshot>(Snapshot);
+	bDidApplyInitialConstraint = BoundarySnapshot->bDidApplyInitialConstraint;
 }

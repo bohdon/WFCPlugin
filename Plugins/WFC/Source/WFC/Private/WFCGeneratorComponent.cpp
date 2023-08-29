@@ -5,16 +5,17 @@
 
 #include "WFCAsset.h"
 #include "WFCModule.h"
-#include "WFCTileSet.h"
+#include "WFCStatics.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
-#include "Core/WFCModel.h"
 
 
 UWFCGeneratorComponent::UWFCGeneratorComponent()
 	: StepLimit(100000),
+	  bUseStartupSnapshot(true),
 	  bAutoRun(true),
-	  EditorGridColor(FLinearColor::White)
+	  StepGranularity(EWFCGeneratorStepGranularity::None),
+	  DebugGridColor(FLinearColor::White)
 {
 }
 
@@ -28,66 +29,37 @@ void UWFCGeneratorComponent::BeginPlay()
 	}
 }
 
-bool UWFCGeneratorComponent::Initialize()
+bool UWFCGeneratorComponent::Initialize(bool bForce)
 {
+	if (!bForce && IsInitialized())
+	{
+		// already initialized
+		return true;
+	}
+
 	if (!WFCAsset)
 	{
 		UE_LOG(LogWFC, Warning, TEXT("No WFCAsset was specified: %s"), *GetNameSafe(GetOwner()));
 		return false;
 	}
 
-	if (!WFCAsset->TileSet)
+	Generator = UWFCStatics::CreateWFCGenerator(this, WFCAsset);
+	if (!Generator)
 	{
-		UE_LOG(LogWFC, Warning, TEXT("No TileSet was specified: %s"), *WFCAsset->GetName());
 		return false;
 	}
 
-	if (WFCAsset->TileSet->TileAssets.IsEmpty())
-	{
-		// TODO: move to asset verify, don't warn here
-		UE_LOG(LogWFC, Warning, TEXT("TileSet has no tiles: %s"), *WFCAsset->TileSet->GetName());
-		return false;
-	}
-
-	if (!WFCAsset->ModelClass)
-	{
-		UE_LOG(LogWFC, Warning, TEXT("No ModelClass was specified: %s"), *WFCAsset->GetName());
-		return false;
-	}
-
-	if (!WFCAsset->GeneratorClass)
-	{
-		UE_LOG(LogWFC, Warning, TEXT("No GeneratorClass was specified: %s"), *WFCAsset->GetName());
-		return false;
-	}
-
-	SCOPE_LOG_TIME(TEXT("UWFCGeneratorComponent::InitializeGenerator"), nullptr);
-
-	// create and initialize the model and generate all tiles
-	Model = NewObject<UWFCModel>(this, WFCAsset->ModelClass);
-	check(Model != nullptr);
-	Model->Initialize(WFCAsset->TileSet);
-	{
-		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::GenerateTiles"), *Model->GetClass()->GetName()), nullptr);
-		Model->GenerateTiles();
-	}
-
-	// create and initialize the generator
-	Generator = NewObject<UWFCGenerator>(this, WFCAsset->GeneratorClass);
-	check(Generator != nullptr);
 	Generator->OnCellSelected.AddUObject(this, &UWFCGeneratorComponent::OnCellSelected);
 	Generator->OnStateChanged.AddUObject(this, &UWFCGeneratorComponent::OnStateChanged);
 
-	FWFCGeneratorConfig Config;
-	Config.Model = Model;
-	Config.GridConfig = WFCAsset->GridConfig;
-	Config.ConstraintClasses = WFCAsset->ConstraintClasses;
-	Config.CellSelectorClasses = WFCAsset->CellSelectorClasses;
+	Generator->Initialize(false);
 
+	if (bUseStartupSnapshot && WFCAsset->StartupSnapshot)
 	{
-		SCOPE_LOG_TIME(*FString::Printf(TEXT("%s::Initialize"), *Generator->GetClass()->GetName()), nullptr);
-		Generator->Initialize(Config);
+		Generator->ApplySnapshot(WFCAsset->StartupSnapshot);
 	}
+
+	Generator->InitializeConstraints();
 
 	return true;
 }
@@ -99,10 +71,7 @@ bool UWFCGeneratorComponent::IsInitialized() const
 
 void UWFCGeneratorComponent::ResetGenerator()
 {
-	if (Generator)
-	{
-		Generator->Reset();
-	}
+	Initialize(true);
 }
 
 void UWFCGeneratorComponent::Run()
@@ -118,7 +87,7 @@ void UWFCGeneratorComponent::Run()
 	}
 }
 
-void UWFCGeneratorComponent::Next(bool bBreakAfterConstraints)
+void UWFCGeneratorComponent::Next()
 {
 	if (!IsInitialized())
 	{
@@ -126,7 +95,8 @@ void UWFCGeneratorComponent::Next(bool bBreakAfterConstraints)
 	}
 	else
 	{
-		Generator->Next(bBreakAfterConstraints);
+		Generator->StepGranularity = StepGranularity;
+		Generator->Next();
 	}
 }
 
@@ -179,6 +149,15 @@ void UWFCGeneratorComponent::OnStateChanged(EWFCGeneratorState State)
 
 	if (State == EWFCGeneratorState::Finished || State == EWFCGeneratorState::Error)
 	{
+		if (State == EWFCGeneratorState::Finished)
+		{
+			UE_LOG(LogWFC, Log, TEXT("WFCGenerator finished successfully: %s"), *GetOwner()->GetName());
+		}
+		else
+		{
+			UE_LOG(LogWFC, Error, TEXT("WFCGenerator failed: %s"), *GetOwner()->GetName());
+		}
+
 		OnFinishedEvent_BP.Broadcast(State == EWFCGeneratorState::Finished);
 		OnFinishedEvent.Broadcast(State);
 	}

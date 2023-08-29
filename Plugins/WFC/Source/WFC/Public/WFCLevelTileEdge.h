@@ -55,4 +55,8 @@ public:
 #if WITH_EDITOR
 	virtual void PostEditMove(bool bFinished) override;
 #endif
+
+protected:
+	/** Update the color of the arrow component to a random debug color based on the edge type. */
+	virtual void UpdateColorFromEdgeType();
 };

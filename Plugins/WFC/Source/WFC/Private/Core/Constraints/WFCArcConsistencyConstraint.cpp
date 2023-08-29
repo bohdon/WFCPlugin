@@ -16,9 +16,19 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Arc Consistency - Checks"), STAT_WFCArcCons
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Arc Consistency - Bans"), STAT_WFCArcConstraintNumBans, STATGROUP_WFC);
 
 
+void UWFCArcConstraintSnapshot::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar << AllowedTiles;
+	Ar << SupportCounts;
+	Ar << DefaultSupportCounts;
+	Ar << BansToPropagate;
+}
+
 UWFCArcConsistencyConstraint::UWFCArcConsistencyConstraint()
 	: bIgnoreContradictionCells(false),
-	  bDebugNext(false),
+	  bIsInitialized(false),
 	  bDidApplyInitialConsistency(false)
 {
 }
@@ -33,8 +43,14 @@ void UWFCArcConsistencyConstraint::Initialize(UWFCGenerator* InGenerator)
 	SET_DWORD_STAT(STAT_WFCArcConstraintNumChecks, 0);
 	SET_DWORD_STAT(STAT_WFCArcConstraintNumBans, 0);
 
+	if (bIsInitialized)
+	{
+		return;
+	}
+
 	bDidApplyInitialConsistency = false;
 	BansToPropagate.Reset();
+	VisitedDuringPropagation.Reset();
 
 	// initialize allowed tiles to empty list for each combination of [tile][direction].
 	AllowedTiles.AddZeroed(Model->GetNumTiles());
@@ -48,8 +64,6 @@ void UWFCArcConsistencyConstraint::Initialize(UWFCGenerator* InGenerator)
 	SupportCounts.AddZeroed(Grid->GetNumCells());
 	for (int32 CellIndex = 0; CellIndex < Grid->GetNumCells(); ++CellIndex)
 	{
-		FWFCCell& Cell = Generator->GetCell(CellIndex);
-
 		SupportCounts[CellIndex].AddZeroed(Model->GetNumTiles());
 		for (int32 TileId = 0; TileId < Model->GetNumTiles(); ++TileId)
 		{
@@ -59,6 +73,8 @@ void UWFCArcConsistencyConstraint::Initialize(UWFCGenerator* InGenerator)
 
 	// store for quick resetting
 	DefaultSupportCounts = SupportCounts;
+
+	bIsInitialized = true;
 }
 
 void UWFCArcConsistencyConstraint::Reset()
@@ -71,6 +87,7 @@ void UWFCArcConsistencyConstraint::Reset()
 
 	bDidApplyInitialConsistency = false;
 	BansToPropagate.Reset();
+	VisitedDuringPropagation.Reset();
 	SupportCounts = DefaultSupportCounts;
 }
 
@@ -87,6 +104,32 @@ void UWFCArcConsistencyConstraint::AddAllowedTileForDirection(FWFCTileId TileId,
 const TArray<FWFCTileId>& UWFCArcConsistencyConstraint::GetAllowedTileIds(FWFCTileId TileId, FWFCGridDirection Direction) const
 {
 	return AllowedTiles[TileId][Direction];
+}
+
+UWFCConstraintSnapshot* UWFCArcConsistencyConstraint::CreateSnapshot(UObject* Outer) const
+{
+	UWFCArcConstraintSnapshot* Snapshot = NewObject<UWFCArcConstraintSnapshot>(Outer);
+	Snapshot->AllowedTiles = AllowedTiles;
+	Snapshot->SupportCounts = SupportCounts;
+	Snapshot->DefaultSupportCounts = DefaultSupportCounts;
+	Snapshot->BansToPropagate = BansToPropagate;
+	return Snapshot;
+}
+
+void UWFCArcConsistencyConstraint::ApplySnapshot(const UWFCConstraintSnapshot* Snapshot)
+{
+	const UWFCArcConstraintSnapshot* ArcSnapshot = Cast<UWFCArcConstraintSnapshot>(Snapshot);
+	if (!ArcSnapshot)
+	{
+		return;
+	}
+	AllowedTiles = ArcSnapshot->AllowedTiles;
+	SupportCounts = ArcSnapshot->SupportCounts;
+	DefaultSupportCounts = ArcSnapshot->DefaultSupportCounts;
+	BansToPropagate = ArcSnapshot->BansToPropagate;
+
+	bIsInitialized = true;
+	bDidApplyInitialConsistency = true;
 }
 
 void UWFCArcConsistencyConstraint::NotifyCellBan(FWFCCellIndex CellIndex, FWFCTileId BannedTileId)
@@ -144,7 +187,10 @@ void UWFCArcConsistencyConstraint::ApplyInitialConsistency()
 				SupportCounts[CellIndex][TileId][Direction] = SupportCount;
 				if (SupportCount == 0 && Cell.TileCandidates.Contains(TileId))
 				{
-					Generator->Ban(CellIndex, TileId);
+					if (Generator->Ban(CellIndex, TileId) && !bIgnoreContradictionCells)
+					{
+						return;
+					}
 					break;
 				}
 			}
@@ -184,7 +230,7 @@ bool UWFCArcConsistencyConstraint::PropagateChanges()
 			const TArray<FWFCTileId>& SupportedTiles = AllowedTiles[BanToPropagate.TileId][Direction];
 			for (const FWFCTileId& SupportedTileId : SupportedTiles)
 			{
-				// Decrement the support count for the supported tile.
+				// Decrement the support count for the supported tile. 
 				// e.g. if tile 1 can have tile 2, 3, or 4 next to it in Direction, it starts with 3 supports.
 				// when tile 3 is banned from the neighbor cell, it loses a support, if all are lost then
 				// tile 1 is no longer a valid candidate.
@@ -192,13 +238,18 @@ bool UWFCArcConsistencyConstraint::PropagateChanges()
 				if (SupportCount == 0)
 				{
 					// no more supports left, ban this tile id for the neighbor
-					Generator->Ban(NeighborCellIndex, SupportedTileId);
+					if (Generator->Ban(NeighborCellIndex, SupportedTileId) && !bIgnoreContradictionCells)
+					{
+						// contradiction
+						return true;
+					}
 				}
 			}
 		}
 
-		if (bDebugNext)
+		if (Generator->StepGranularity >= EWFCGeneratorStepGranularity::ConstraintDetailed)
 		{
+			// break after each ban propagation
 			break;
 		}
 	}

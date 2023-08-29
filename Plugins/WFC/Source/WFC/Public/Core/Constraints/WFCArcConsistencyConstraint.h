@@ -7,6 +7,21 @@
 #include "WFCArcConsistencyConstraint.generated.h"
 
 
+UCLASS()
+class WFC_API UWFCArcConstraintSnapshot : public UWFCConstraintSnapshot
+{
+	GENERATED_BODY()
+
+public:
+	TArray<TArray<TArray<FWFCTileId>>> AllowedTiles;
+	TArray<TArray<TArray<int32>>> SupportCounts;
+	TArray<TArray<TArray<int32>>> DefaultSupportCounts;
+	TArray<FWFCCellIndexAndTileId> BansToPropagate;
+
+	virtual void Serialize(FArchive& Ar) override;
+};
+
+
 /**
  * Base class for a constraint that uses Generalized Arc Consistency to ensure remaining tile candidates for a cell are valid.
  * The most common use case for this is the adjacency constraint, which removes tile candidates that are not allowed to be adjacent
@@ -32,15 +47,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIgnoreContradictionCells;
 
-	/** If true, stop after every tile check for debugging purposes. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bDebugNext;
-
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
 	virtual void Reset() override;
 	virtual void NotifyCellBan(FWFCCellIndex CellIndex, FWFCTileId BannedTileId) override;
 	virtual bool Next() override;
 	virtual void LogDebugInfo() const override;
+	virtual UWFCConstraintSnapshot* CreateSnapshot(UObject* Outer) const override;
+	virtual void ApplySnapshot(const UWFCConstraintSnapshot* Snapshot) override;
 
 	/**
 	 * Add an entry to the table that allows a tile to be placed next to another tile
@@ -59,14 +72,16 @@ public:
 	const TArray<FWFCCellIndexAndDirection>& GetVisitedDuringPropagation() const { return VisitedDuringPropagation; }
 
 protected:
+	bool bIsInitialized;
+
 	/** Contains the allowed list of tiles for each [TileId][Direction]. */
 	TArray<TArray<TArray<FWFCTileId>>> AllowedTiles;
 
 	/** Contains the number of supports for each [CellIndex][TileId][Direction]. */
-	TArray<TArray<TArray<int16>>> SupportCounts;
+	TArray<TArray<TArray<int32>>> SupportCounts;
 
 	/** Cached copy of the support counts after initialization for faster resetting. */
-	TArray<TArray<TArray<int16>>> DefaultSupportCounts;
+	TArray<TArray<TArray<int32>>> DefaultSupportCounts;
 
 	/** List of banned tiles per cell that need to be propagated in the next update. */
 	TArray<FWFCCellIndexAndTileId> BansToPropagate;
