@@ -85,7 +85,7 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 
 	const FVector GridMin = GridTransform.GetTranslation();
 	const FVector GridMax = GridTransform.TransformPosition(FVector(GridDimensions) * GridCellSize);
-	DebugProxy->Boxes.Emplace(FBox(GridMin, GridMax), GeneratorComp->EditorGridColor.ToFColor(true));
+	DebugProxy->Boxes.Emplace(FBox(GridMin, GridMax), GeneratorComp->DebugGridColor.ToFColor(true));
 
 	if (GeneratorComp->IsInitialized())
 	{

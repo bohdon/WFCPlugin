@@ -5,6 +5,7 @@
 
 #include "WFCAssetModel.h"
 #include "WFCModule.h"
+#include "WFCTileAsset.h"
 #include "Core/WFCGenerator.h"
 
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Count Constraint - Mappings"), STAT_WFCCountConstraintMappings, STATGROUP_WFC);
@@ -109,15 +110,19 @@ bool UWFCCountConstraint::Next()
 			FWFCCell& Cell = Generator->GetCell(CellIndex);
 			if (!Cell.HasSelection())
 			{
-				Generator->BanMultiple(CellIndex, TileIdsToBan);
 				INC_DWORD_STAT_BY(STAT_WFCCountConstraintNumBans, TileIdsToBan.Num());
+				if (Generator->BanMultiple(CellIndex, TileIdsToBan))
+				{
+					// contradiction
+					return true;
+				}
+
 				bDidMakeChanges = true;
 			}
 		}
 
 		TileGroupsToBan.Reset();
 	}
-
 
 	INC_FLOAT_STAT_BY(STAT_WFCCountConstraintTime, (FPlatformTime::Seconds() - StartTime) * 1000);
 	return bDidMakeChanges;
@@ -153,15 +158,16 @@ void UWFCTagCountConstraint::Initialize(UWFCGenerator* InGenerator)
 	Super::Initialize(InGenerator);
 
 	const UWFCAssetModel* AssetModel = Cast<UWFCAssetModel>(Model);
-	const UWFCTileSet* TileSet = AssetModel ? AssetModel->GetAssetTileSet() : nullptr;
-	if (!AssetModel || !TileSet)
+	if (!AssetModel)
 	{
-		UE_LOG(LogWFC, Error, TEXT("UWFCTileAssetCountConstraintConfig requires a UWFCAssetModel and UWFCTileSet to be used: %s"),
-		       *GetNameSafe(GetOuter()));
+		UE_LOG(LogWFC, Error, TEXT("%s requires a UWFCAssetModel: %s"), *GetClass()->GetName(), *GetNameSafe(GetOuter()));
 		return;
 	}
 
-	for (const UWFCTileAsset* TileAsset : TileSet->TileAssets)
+	TArray<UWFCTileAsset*> TileAssets;
+	AssetModel->GetAllTileAssets(TileAssets);
+
+	for (const UWFCTileAsset* TileAsset : TileAssets)
 	{
 		const int32 TileMaxCount = GetTileMaxCount(TileAsset);
 		if (TileMaxCount > 0)

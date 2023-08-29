@@ -5,7 +5,9 @@
 
 #include "EngineUtils.h"
 #include "WFCLevelTileEdge.h"
+#include "WFCPreviewSplineComponent.h"
 #include "WFCTileAsset3D.h"
+#include "WFCTilePreviewData.h"
 #include "Core/Grids/WFCGrid3D.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ObjectSaveContext.h"
@@ -13,9 +15,16 @@
 
 AWFCLevelTileInfo::AWFCLevelTileInfo()
 	: bAutoSaveTileAsset(true),
+	  bSaveSplinePreview(true),
 	  Dimensions(FIntVector(1, 1, 1))
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
+	PreviewSpline = CreateOptionalDefaultSubobject<UWFCPreviewSplineComponent>(TEXT("PreviewSpline"));
+	if (PreviewSpline)
+	{
+		PreviewSpline->SetupAttachment(RootComponent);
+	}
 }
 
 void AWFCLevelTileInfo::PreSave(FObjectPreSaveContext SaveContext)
@@ -33,15 +42,20 @@ void AWFCLevelTileInfo::PreSave(FObjectPreSaveContext SaveContext)
 #endif
 }
 
-FVector AWFCLevelTileInfo::GetTileSize() const
+FVector AWFCLevelTileInfo::GetCellSize() const
 {
 	return TileSetInfo ? TileSetInfo->TileSize : FVector(100.f, 100.f, 100.f);
+}
+
+FVector AWFCLevelTileInfo::GetLargeTileSize() const
+{
+	return GetCellSize() * FVector(Dimensions);
 }
 
 FIntVector AWFCLevelTileInfo::WorldToTileLocation(FVector WorldLocation) const
 {
 	const FVector RelativeLocation = GetActorTransform().InverseTransformPosition(WorldLocation);
-	const FVector TileLocation = RelativeLocation / GetTileSize();
+	const FVector TileLocation = RelativeLocation / GetCellSize();
 	return FIntVector(TileLocation);
 }
 
@@ -52,7 +66,10 @@ void AWFCLevelTileInfo::FindEdgeActors()
 	{
 		if (AWFCLevelTileEdge* Edge = *It)
 		{
-			Edges.Add(Edge);
+			if (Edge->GetLevel() == GetLevel())
+			{
+				Edges.Add(Edge);
+			}
 		}
 	}
 }
@@ -80,35 +97,73 @@ bool AWFCLevelTileInfo::UpdateTileAsset()
 	}
 
 	// update tile defs
-	TArray<FWFCTileDef3D> NewTileDefs;
+	bool bAreTileDefsDirty = false;
+	const int32 NewNumTileDefs = Dimensions.X * Dimensions.Y * Dimensions.Z;
+	if (TileAsset->TileDefs.Num() != NewNumTileDefs)
+	{
+		TileAsset->TileDefs.SetNum(NewNumTileDefs);
+		bAreTileDefsDirty = true;
+	}
+
+	int32 Idx = 0;
 	for (int32 Z = 0; Z < Dimensions.Z; ++Z)
 	{
 		for (int32 Y = 0; Y < Dimensions.Y; ++Y)
 		{
 			for (int32 X = 0; X < Dimensions.X; ++X)
 			{
-				FWFCTileDef3D TileDef;
-				TileDef.Location = FIntVector(X, Y, Z);
-				if (TileDef.Location == FIntVector::ZeroValue)
-				{
-					TileDef.ActorClass = TileActorClass;
-					TileDef.Level = TileLevel;
-				}
-				else
-				{
-					TileDef.ActorClass = nullptr;
-					TileDef.Level = nullptr;
-				}
-				TileDef.EdgeTypes = GetAllEdgeTypesForTile(TileDef.Location);
+				FWFCTileDef3D& TileDef = TileAsset->TileDefs[Idx];
 
-				NewTileDefs.Add(TileDef);
+				// set location
+				const FIntVector Location = FIntVector(X, Y, Z);
+				if (TileDef.Location != Location)
+				{
+					TileDef.Location = Location;
+					bAreTileDefsDirty = true;
+				}
+
+				// set actor class and level
+				TSubclassOf<AActor> NewActorClass = Idx == 0 ? TileActorClass : nullptr;
+				TSoftObjectPtr<UWorld> NewLevel = Idx == 0 ? TileLevel : nullptr;
+				if (TileDef.ActorClass != NewActorClass || TileDef.Level != NewLevel)
+				{
+					TileDef.ActorClass = NewActorClass;
+					TileDef.Level = NewLevel;
+					bAreTileDefsDirty = true;
+				}
+
+				// update edge types
+				TMap<EWFCTile3DEdge, FGameplayTag> NewEdgeTypes = GetAllEdgeTypesForTile(TileDef.Location);
+				if (!TileDef.EdgeTypes.OrderIndependentCompareEqual(NewEdgeTypes))
+				{
+					TileDef.EdgeTypes = NewEdgeTypes;
+					bAreTileDefsDirty = true;
+				}
+
+				// update preview data
+				if (Idx == 0 && bSaveSplinePreview && PreviewSpline)
+				{
+					if (!TileDef.PreviewData)
+					{
+						TileDef.PreviewData = NewObject<UWFCTilePreviewData>(TileAsset, NAME_None, RF_Transactional);
+						bAreTileDefsDirty = true;
+					}
+
+					const TArray<FVector> SplinePoints = PreviewSpline->GetSplinePoints();
+					if (TileDef.PreviewData->SplinePoints != SplinePoints)
+					{
+						TileDef.PreviewData->SplinePoints = SplinePoints;
+						bAreTileDefsDirty = true;
+					}
+				}
+
+				++Idx;
 			}
 		}
 	}
 
-	if (TileAsset->TileDefs != NewTileDefs)
+	if (bAreTileDefsDirty)
 	{
-		TileAsset->TileDefs = NewTileDefs;
 		TileAsset->Modify();
 	}
 
@@ -164,6 +219,24 @@ bool AWFCLevelTileInfo::IsExteriorEdge(FIntVector TileLocation, FIntVector Direc
 	return ForwardTileCenter.X < 0 || ForwardTileCenter.X >= Dimensions.X ||
 		ForwardTileCenter.Y < 0 || ForwardTileCenter.Y >= Dimensions.Y ||
 		ForwardTileCenter.Z < 0 || ForwardTileCenter.Z >= Dimensions.Z;
+}
+
+void AWFCLevelTileInfo::SetSplinePreviewToTileDimensions()
+{
+	if (!PreviewSpline)
+	{
+		return;
+	}
+
+	const FVector LargeTileSize = GetLargeTileSize();
+	const TArray<FVector> NewPoints = {
+		FVector(0.f, 0.f, 0.f) * LargeTileSize,
+		FVector(1.f, 0.f, 0.f) * LargeTileSize,
+		FVector(1.f, 1.f, 0.f) * LargeTileSize,
+		FVector(0.f, 1.f, 0.f) * LargeTileSize,
+	};
+	PreviewSpline->SetSplinePoints(NewPoints, ESplineCoordinateSpace::Local);
+	PreviewSpline->SetAllSplinePointsType(ESplinePointType::Linear);
 }
 
 #if WITH_EDITOR

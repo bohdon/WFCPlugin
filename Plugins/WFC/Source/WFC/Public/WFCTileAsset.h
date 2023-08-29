@@ -8,6 +8,7 @@
 #include "Engine/DataAsset.h"
 #include "WFCTileAsset.generated.h"
 
+class UWFCTilePreviewData;
 class UWFCTileAsset;
 
 
@@ -82,4 +83,7 @@ public:
 
 	/** Return true if an edge is interior to this tile, meaning it faces another tile in the same asset. */
 	virtual bool IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direction) const;
+
+	/** Return the preview data for a tile def. */
+	virtual const UWFCTilePreviewData* GetTileDefPreviewData(int32 TileDefIndex) const; 
 };

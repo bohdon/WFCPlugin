@@ -23,6 +23,7 @@ public:
 	UWFCEdgeConstraint();
 
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
+	virtual void ApplySnapshot(const UWFCConstraintSnapshot* Snapshot) override;
 
 	/** Return true if two edges are allowed to be next to each other. */
 	virtual bool AreEdgesCompatible(const FGameplayTag& EdgeA, const FGameplayTag& EdgeB) const;
@@ -31,6 +32,8 @@ public:
 	virtual bool AreTilesCompatible(const FWFCModelAssetTile& TileA, const FWFCModelAssetTile& TileB, FWFCGridDirection Direction) const;
 
 protected:
+	bool bIsInitializedFromTiles;
+	
 	/** Reference to the asset model required for this constraint. */
 	UPROPERTY(Transient)
 	TObjectPtr<const UWFCAssetModel> AssetModel;

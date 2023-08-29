@@ -84,6 +84,12 @@ bool UWFCTileAsset3D::IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direc
 		DeltaLocation.Z >= 0 && DeltaLocation.Z < Dimensions.Z;
 }
 
+const UWFCTilePreviewData* UWFCTileAsset3D::GetTileDefPreviewData(int32 TileDefIndex) const
+{
+	check(TileDefs.IsValidIndex(TileDefIndex));
+	return TileDefs[TileDefIndex].PreviewData;
+}
+
 #if WITH_EDITOR
 EDataValidationResult UWFCTileAsset3D::IsDataValid(FDataValidationContext& Context)
 {

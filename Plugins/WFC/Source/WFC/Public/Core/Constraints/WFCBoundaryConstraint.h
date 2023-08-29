@@ -9,6 +9,17 @@
 #include "WFCBoundaryConstraint.generated.h"
 
 
+UCLASS()
+class WFC_API UWFCBoundaryConstraintSnapshot : public UWFCConstraintSnapshot
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	bool bDidApplyInitialConstraint;
+};
+
+
 /**
  * Require tiles placed next to the grid boundary to follow certain rules.
  * This is useful for enforcing that large tiles remain wholly inside the grid.
@@ -26,6 +37,8 @@ public:
 	virtual void Initialize(UWFCGenerator* InGenerator) override;
 	virtual void Reset() override;
 	virtual bool Next() override;
+	virtual UWFCConstraintSnapshot* CreateSnapshot(UObject* Outer) const override;
+	virtual void ApplySnapshot(const UWFCConstraintSnapshot* Snapshot) override;
 
 	/**
 	 * Add a mapping that prohibits a tile from being placed next to a grid boundary for an outgoing direction.
@@ -36,6 +49,8 @@ public:
 	bool CanTileBeNextToBoundary(const FWFCModelAssetTile& Tile, FWFCGridDirection Direction) const;
 
 protected:
+	bool bIsInitialized;
+	
 	/** Map of tiles and the outgoing directions for which they are prohibited from being adjacent to the grid boundary. */
 	TMap<FWFCTileId, TArray<FWFCGridDirection>> TileBoundaryProhibitionMap;
 

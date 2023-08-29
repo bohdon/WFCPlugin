@@ -12,6 +12,14 @@ class UWFCModel;
 class UWFCGenerator;
 
 
+/** A snapshot of a WFC constraint that can be used to save and restore state. */
+UCLASS(DefaultToInstanced, EditInlineNew)
+class WFC_API UWFCConstraintSnapshot : public UObject
+{
+	GENERATED_BODY()
+};
+
+
 /**
  * A set of rules that can be applied to how tiles are allowed to be placed.
  */
@@ -44,6 +52,10 @@ public:
 
 	/** Log debug info about this constraint. */
 	virtual void LogDebugInfo() const;
+
+	virtual UWFCConstraintSnapshot* CreateSnapshot(UObject* Outer) const;
+
+	virtual void ApplySnapshot(const UWFCConstraintSnapshot* Snapshot);
 
 protected:
 	UPROPERTY(Transient)

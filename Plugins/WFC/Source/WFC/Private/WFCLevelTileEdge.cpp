@@ -22,6 +22,7 @@ AWFCLevelTileEdge::AWFCLevelTileEdge()
 	{
 		if (ArrowComponent)
 		{
+			ArrowComponent->SetRelativeScale3D(FVector(2.f, 2.f, 2.f));
 			ArrowComponent->ArrowColor = FColor::White;
 			ArrowComponent->ArrowLength = 40.f;
 			ArrowComponent->bTreatAsASprite = true;
@@ -47,7 +48,7 @@ void AWFCLevelTileEdge::SnapToGrid()
 		const FRotator NewRotation = FRotator(FMath::GridSnap(Rotation.Pitch, 90.f), FMath::GridSnap(Rotation.Yaw, 90.f), 0.f);
 		SetActorRotation(NewRotation);
 
-		const FVector TileSize = TileInfo->GetTileSize();
+		const FVector TileSize = TileInfo->GetCellSize();
 
 		// edges are positioned in the center of the YZ plane of any face, pointing towards +X
 		const FVector CenterOffset = NewRotation.RotateVector(FVector(0.f, 1.f, 1.f)) * TileSize * 0.5f;
@@ -56,11 +57,25 @@ void AWFCLevelTileEdge::SnapToGrid()
 	}
 }
 
+void AWFCLevelTileEdge::UpdateColorFromEdgeType()
+{
+#if WITH_EDITORONLY_DATA
+	const int32 EdgeTypeHash = GetTypeHash(EdgeType);
+	const FLinearColor Color = UWFCStatics::GetRandomDebugColor(EdgeTypeHash);
+
+	if (ArrowComponent)
+	{
+		ArrowComponent->SetArrowColor(Color);
+	}
+#endif
+}
+
 void AWFCLevelTileEdge::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
 	SnapToGrid();
+	UpdateColorFromEdgeType();
 }
 
 void AWFCLevelTileEdge::UpdateTileLocationAndDirection()
@@ -70,7 +85,7 @@ void AWFCLevelTileEdge::UpdateTileLocationAndDirection()
 
 	if (const AWFCLevelTileInfo* TileInfo = GetOwningLevelTileInfo())
 	{
-		const FVector TileCenterOffset = FVector(EdgeDirection) * TileInfo->GetTileSize() * 0.5f;
+		const FVector TileCenterOffset = FVector(EdgeDirection) * TileInfo->GetCellSize() * 0.5f;
 		const FVector TileCenter = GetActorLocation() - TileCenterOffset;
 		TileLocation = TileInfo->WorldToTileLocation(TileCenter);
 	}

@@ -15,6 +15,9 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Tiles"), STAT_WFCGeneratorNumTiles, STA
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Cells Selected"), STAT_WFCGeneratorNumCellsSelected, STATGROUP_WFC);
 
 
+// UWFCGenerator
+// -------------
+
 UWFCGenerator::UWFCGenerator()
 	: State(EWFCGeneratorState::None)
 {
@@ -53,24 +56,40 @@ UWFCCellSelector* UWFCGenerator::GetCellSelector(TSubclassOf<UWFCCellSelector> S
 	return nullptr;
 }
 
-void UWFCGenerator::Initialize(FWFCGeneratorConfig InConfig)
+void UWFCGenerator::Configure(FWFCGeneratorConfig InConfig)
 {
-	if (!bIsInitialized)
+	Config = InConfig;
+}
+
+void UWFCGenerator::Initialize(bool bFull)
+{
+	if (bIsInitialized)
 	{
-		Config = InConfig;
-
-		NumTiles = Config.Model->GetNumTiles();
-		SET_DWORD_STAT(STAT_WFCGeneratorNumTiles, NumTiles);
-
-		InitializeGrid(Config.GridConfig.Get());
-		InitializeCells();
-		InitializeConstraints();
-		InitializeCellSelectors();
-
-		SetState(EWFCGeneratorState::InProgress);
-
-		bIsInitialized = true;
+		return;
 	}
+
+	SCOPE_LOG_TIME_FUNC();
+
+	// TODO: cache in WFCAsset snapshot, and then put this behind bFull
+	Config.Model->GenerateTiles();
+	NumTiles = Config.Model->GetNumTiles();
+	SET_DWORD_STAT(STAT_WFCGeneratorNumTiles, NumTiles);
+
+	InitializeGrid(Config.GridConfig.Get());
+	InitializeCells();
+
+	CreateConstraints();
+	CreateCellSelectors();
+
+	if (bFull)
+	{
+		InitializeConstraints();
+	}
+	InitializeCellSelectors();
+
+	SetState(EWFCGeneratorState::InProgress);
+
+	bIsInitialized = true;
 }
 
 void UWFCGenerator::InitializeGrid(const UWFCGridConfig* GridConfig)
@@ -80,7 +99,7 @@ void UWFCGenerator::InitializeGrid(const UWFCGridConfig* GridConfig)
 	check(Grid != nullptr);
 }
 
-void UWFCGenerator::InitializeConstraints()
+void UWFCGenerator::CreateConstraints()
 {
 	Constraints.Reset();
 	for (const TSubclassOf<UWFCConstraint>& ConstraintClass : Config.ConstraintClasses)
@@ -95,15 +114,17 @@ void UWFCGenerator::InitializeConstraints()
 		check(Constraint != nullptr);
 		Constraints.Add(Constraint);
 	}
+}
 
-	// initialize once all constraints are constructed in case they need to reference each other
+void UWFCGenerator::InitializeConstraints()
+{
 	for (UWFCConstraint* Constraint : Constraints)
 	{
 		Constraint->Initialize(this);
 	}
 }
 
-void UWFCGenerator::InitializeCellSelectors()
+void UWFCGenerator::CreateCellSelectors()
 {
 	CellSelectors.Reset();
 	for (TSubclassOf<UWFCCellSelector> CellSelectorClass : Config.CellSelectorClasses)
@@ -117,8 +138,10 @@ void UWFCGenerator::InitializeCellSelectors()
 		check(NewSelector != nullptr);
 		CellSelectors.Add(NewSelector);
 	}
+}
 
-	// initialize once all selectors are constructed in case they need to reference each other
+void UWFCGenerator::InitializeCellSelectors()
+{
 	for (UWFCCellSelector* CellSelector : CellSelectors)
 	{
 		CellSelector->Initialize(this);
@@ -170,6 +193,10 @@ void UWFCGenerator::Reset()
 		Constraint->Reset();
 	}
 
+	bDidSelectCellThisStep = false;
+	NumBansThisUpdate = 0;
+	CurrentStepPhase = EWFCGeneratorStepPhase::None;
+	CellsAffectedThisUpdate.Reset();
 	SetState(EWFCGeneratorState::None);
 }
 
@@ -177,7 +204,7 @@ void UWFCGenerator::Run(int32 StepLimit)
 {
 	if (!bIsInitialized)
 	{
-		UE_LOG(LogWFC, Warning, TEXT("Initialize must be called before Run on a WFCGenerator"));
+		UE_LOG(LogWFC, Error, TEXT("Initialize must be called before Run on a WFCGenerator"));
 		return;
 	}
 
@@ -195,7 +222,36 @@ void UWFCGenerator::Run(int32 StepLimit)
 	}
 }
 
-void UWFCGenerator::Next(bool bBreakAfterConstraints)
+void UWFCGenerator::RunStartup(int32 StepLimit)
+{
+	if (!bIsInitialized)
+	{
+		UE_LOG(LogWFC, Error, TEXT("Initialize must be called before RunStartup on a WFCGenerator"));
+		return;
+	}
+
+	SCOPE_LOG_TIME(TEXT("UWFCGenerator::RunStartup"), nullptr);
+
+	StepGranularity = EWFCGeneratorStepGranularity::None;
+
+	for (int32 Step = 0; Step < StepLimit; ++Step)
+	{
+		Next(true);
+
+		if (CurrentStepPhase == EWFCGeneratorStepPhase::Selection)
+		{
+			return;
+		}
+
+		if (State != EWFCGeneratorState::InProgress &&
+			State != EWFCGeneratorState::None)
+		{
+			break;
+		}
+	}
+}
+
+void UWFCGenerator::Next(bool bNoSelection)
 {
 	if (State == EWFCGeneratorState::Finished)
 	{
@@ -216,27 +272,40 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 		if (Constraint->Next())
 		{
 			UE_LOG(LogWFC, Verbose, TEXT("Applied constraint: %s, bans: %d"), *Constraint->GetName(), NumBansThisUpdate);
+
 			bDidApplyConstraints = true;
-			if (State == EWFCGeneratorState::Finished)
+			if (State == EWFCGeneratorState::Finished || State == EWFCGeneratorState::Error)
 			{
 				return;
 			}
+
 			SetState(EWFCGeneratorState::InProgress);
 
-			if (bDidSelectCellThisStep)
+			if (bDidSelectCellThisStep && StepGranularity >= EWFCGeneratorStepGranularity::ConstraintCollapse)
 			{
 				// stop immediately if the constraint caused a cell selection
+				return;
+			}
+
+			if (StepGranularity >= EWFCGeneratorStepGranularity::EachConstraint)
+			{
+				// break after every constraint that did work
 				return;
 			}
 		}
 	}
 
-	if (bBreakAfterConstraints && bDidApplyConstraints)
+	if (StepGranularity >= EWFCGeneratorStepGranularity::Constraints && bDidApplyConstraints)
 	{
 		return;
 	}
 
 	CurrentStepPhase = EWFCGeneratorStepPhase::Selection;
+
+	if (bNoSelection)
+	{
+		return;
+	}
 
 	// select a cell to observe
 	const FWFCCellIndex CellIndex = SelectNextCellIndex();
@@ -259,7 +328,8 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	}
 
 	Select(CellIndex, TileId);
-	if (State == EWFCGeneratorState::Finished)
+
+	if (State == EWFCGeneratorState::Finished || State == EWFCGeneratorState::Error)
 	{
 		return;
 	}
@@ -267,7 +337,7 @@ void UWFCGenerator::Next(bool bBreakAfterConstraints)
 	SetState(EWFCGeneratorState::InProgress);
 }
 
-void UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
+bool UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
 {
 	if (IsValidCellIndex(CellIndex))
 	{
@@ -277,11 +347,15 @@ void UWFCGenerator::Ban(int32 CellIndex, int32 TileId)
 		{
 			OnCellCandidateBanned(CellIndex, TileId);
 		}
+
+		return Cell.HasNoCandidates();
 	}
+	return false;
 }
 
-void UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
+bool UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
 {
+	bool bIsContradiction = false;
 	if (IsValidCellIndex(CellIndex) && TileIds.Num() > 0)
 	{
 		TArray<FWFCTileId> BannedTileIds;
@@ -295,6 +369,8 @@ void UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
 				BannedTileIds.Add(TileId);
 				++NumBansThisUpdate;
 			}
+
+			bIsContradiction |= Cell.HasNoCandidates();
 		}
 
 		if (!BannedTileIds.IsEmpty())
@@ -302,6 +378,7 @@ void UWFCGenerator::BanMultiple(int32 CellIndex, TArray<int32> TileIds)
 			OnCellCandidatesBanned(CellIndex, BannedTileIds);
 		}
 	}
+	return bIsContradiction;
 }
 
 void UWFCGenerator::Select(int32 CellIndex, int32 TileId)
@@ -344,6 +421,51 @@ void UWFCGenerator::GetSelectedTileIds(TArray<int32>& OutTileIds) const
 		const FWFCCell& Cell = GetCell(Idx);
 		OutTileIds[Idx] = Cell.GetSelectedTileId();
 	}
+}
+
+UWFCGeneratorSnapshot* UWFCGenerator::CreateSnapshot(UObject* Outer) const
+{
+	UWFCGeneratorSnapshot* Snapshot = NewObject<UWFCGeneratorSnapshot>(Outer);
+	Snapshot->Cells = Cells;
+
+	for (const UWFCConstraint* Constraint : Constraints)
+	{
+		UWFCConstraintSnapshot* ConstraintSnapshot = Constraint->CreateSnapshot(Snapshot);
+		if (ConstraintSnapshot)
+		{
+			Snapshot->ConstraintSnapshots.Add(Constraint->GetClass(), ConstraintSnapshot);
+		}
+	}
+
+	return Snapshot;
+}
+
+void UWFCGenerator::ApplySnapshot(const UWFCGeneratorSnapshot* Snapshot)
+{
+	if (!Snapshot)
+	{
+		return;
+	}
+
+	if (Snapshot->Cells.Num() == !Cells.Num())
+	{
+		UE_LOG(LogWFC, Error, TEXT("Snapshot does not match cell count: %s"), *Snapshot->GetFullName(Snapshot->GetOuter()));
+		return;
+	}
+
+	Cells = Snapshot->Cells;
+
+	for (UWFCConstraint* Constraint : Constraints)
+	{
+		const UWFCConstraintSnapshot* ConstraintSnapshot = Snapshot->ConstraintSnapshots.FindRef(Constraint->GetClass());
+		if (ConstraintSnapshot)
+		{
+			Constraint->ApplySnapshot(ConstraintSnapshot);
+			UE_LOG(LogWFC, Verbose, TEXT("Applied constraint snapshot: %s"), *Constraint->GetName());
+		}
+	}
+
+	UE_LOG(LogWFC, Log, TEXT("Applied snapshot: %s"), *Snapshot->GetFullName(Snapshot->GetOuter()));
 }
 
 FWFCCell& UWFCGenerator::GetCell(FWFCCellIndex CellIndex)
@@ -407,6 +529,11 @@ void UWFCGenerator::OnCellChanged(FWFCCellIndex CellIndex)
 		bDidSelectCellThisStep = true;
 		OnCellSelected.Broadcast(CellIndex);
 	}
+	else if (Cell.HasNoCandidates())
+	{
+		// contradiction
+		SetState(EWFCGeneratorState::Error);
+	}
 
 	for (UWFCConstraint* Constraint : Constraints)
 	{
@@ -453,6 +580,17 @@ FWFCTileId UWFCGenerator::SelectNextTileForCell(FWFCCellIndex CellIndex)
 		TotalWeight += TileWeight;
 	}
 
+	if (FMath::IsNearlyZero(TotalWeight))
+	{
+		// no weights, treat all equally
+		const int32 Idx = FMath::RandHelper(Cell.TileCandidates.Num());
+
+		UE_LOG(LogWFC, Verbose, TEXT("Selected tile %s out of %d candidates, with 0 total weight."),
+		       *GetModel()->GetTileDebugString(Cell.TileCandidates[Idx]), Cell.TileCandidates.Num());
+
+		return Cell.TileCandidates[Idx];
+	}
+
 	float Rand = FMath::FRand() * TotalWeight;
 	for (int32 Idx = 0; Idx < Cell.TileCandidates.Num(); ++Idx)
 	{
@@ -462,6 +600,10 @@ FWFCTileId UWFCGenerator::SelectNextTileForCell(FWFCCellIndex CellIndex)
 		}
 		else
 		{
+			UE_LOG(LogWFC, Verbose, TEXT("Selected tile %s out of %d candidates. (Weight: %f, Probability: %f%%)"),
+			       *GetModel()->GetTileDebugString(Cell.TileCandidates[Idx]), Cell.TileCandidates.Num(),
+			       TileWeights[Idx], (TileWeights[Idx] / TotalWeight) * 100.f);
+
 			return Cell.TileCandidates[Idx];
 		}
 	}

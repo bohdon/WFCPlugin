@@ -8,6 +8,7 @@
 #include "WFCTileAsset3D.generated.h"
 
 
+class UWFCTilePreviewData;
 /** The edge types for a 3D tile */
 UENUM(BlueprintType)
 enum class EWFCTile3DEdge : uint8
@@ -58,10 +59,15 @@ struct FWFCTileDef3D
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "WFC.EdgeType"))
 	TMap<EWFCTile3DEdge, FGameplayTag> EdgeTypes;
 
+	/** Preview data for representing the tile without having to load it. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
+	TObjectPtr<UWFCTilePreviewData> PreviewData;
+
 	bool operator==(const FWFCTileDef3D& Other) const
 	{
 		return Other.Location == Location && Other.ActorClass == ActorClass &&
-			Other.Level == Level && Other.EdgeTypes.OrderIndependentCompareEqual(EdgeTypes);
+			Other.Level == Level && Other.EdgeTypes.OrderIndependentCompareEqual(EdgeTypes) &&
+			PreviewData == Other.PreviewData;
 	}
 
 	bool operator!=(const FWFCTileDef3D& Other) const
@@ -111,6 +117,7 @@ public:
 	virtual int32 GetTileDefInDirection(int32 TileDefIndex, FWFCGridDirection Direction) const override;
 	virtual TSubclassOf<AActor> GetTileDefActorClass(int32 TileDefIndex) const override;
 	virtual bool IsInteriorEdge(int32 TileDefIndex, FWFCGridDirection Direction) const override;
+	virtual const UWFCTilePreviewData* GetTileDefPreviewData(int32 TileDefIndex) const override;
 
 #if WITH_EDITOR
 	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) override;

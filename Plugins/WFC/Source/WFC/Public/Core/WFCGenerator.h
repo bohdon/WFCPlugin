@@ -7,11 +7,28 @@
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 
+class UWFCConstraintSnapshot;
 class UWFCCellSelector;
 class UWFCModel;
 class UWFCGrid;
 class UWFCGridConfig;
 class UWFCConstraint;
+
+
+/** Stores information about a generator that can be used to restore state. */
+UCLASS(DefaultToInstanced, EditInlineNew)
+class WFC_API UWFCGeneratorSnapshot : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(VisibleAnywhere)
+	TArray<FWFCCell> Cells;
+
+	/** Snapshots for each of the constraints, by class. */
+	UPROPERTY(VisibleAnywhere)
+	TMap<TSubclassOf<UWFCConstraint>, TObjectPtr<UWFCConstraintSnapshot>> ConstraintSnapshots;
+};
 
 
 /**
@@ -27,7 +44,7 @@ struct FWFCGeneratorConfig
 	}
 
 	UPROPERTY()
-	TWeakObjectPtr<const UWFCModel> Model;
+	TWeakObjectPtr<UWFCModel> Model;
 
 	UPROPERTY()
 	TWeakObjectPtr<const UWFCGridConfig> GridConfig;
@@ -63,7 +80,11 @@ public:
 	EWFCGeneratorState State;
 
 	void SetState(EWFCGeneratorState NewState);
-
+	
+	/** The granularity of work that should be performed when calling Next() */
+	UPROPERTY(BlueprintReadWrite)
+	EWFCGeneratorStepGranularity StepGranularity;
+	
 	/** Return the total number of cells */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumCells() const { return NumCells; }
@@ -96,9 +117,19 @@ public:
 	UFUNCTION(BlueprintPure, Meta = (DeterminesOutputType="SelectorClass"))
 	UWFCCellSelector* GetCellSelector(TSubclassOf<UWFCCellSelector> SelectorClass) const;
 
-	/** Initialize the generator. */
+	/** Set the config. Should be called before Initialize. */
+	void Configure(FWFCGeneratorConfig InConfig);
+
+	/**
+	 * Initialize the generator.
+	 * @param bFull If true, perform a full initialization of the model and constraints, otherwise those must be done manually.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void Initialize(FWFCGeneratorConfig InConfig);
+	void Initialize(bool bFull = true);
+
+	/** Initialize all constraints. */
+	UFUNCTION(BlueprintCallable)
+	void InitializeConstraints();
 
 	UFUNCTION(BlueprintPure)
 	bool IsInitialized() const { return bIsInitialized; }
@@ -111,17 +142,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Run(int32 StepLimit = 100000);
 
+	/** Run the deterministic constraints for startup only, abort before any tile selection. */
+	UFUNCTION(BlueprintCallable)
+	void RunStartup(int32 StepLimit = 100000);
+
 	/** Continue the generator forward by selecting the next tile. */
-	UFUNCTION(BlueprintCallable)
-	void Next(bool bBreakAfterConstraints = false);
+	UFUNCTION(BlueprintCallable, Meta = (AdvancedDisplay = "0"))
+	void Next(bool bNoSelection = false);
 
-	/** Ban a tile from being a candidate for a cell. */
+	/**
+	 * Ban a tile from being a candidate for a cell.
+	 * @return True if a contradiction was created.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void Ban(int32 CellIndex, int32 TileId);
+	bool Ban(int32 CellIndex, int32 TileId);
 
-	/** Ban multiple tiles from being candidates for a cell. */
+	/**
+	 * Ban multiple tiles from being candidates for a cell.
+	 * @return True if a contradiction was created.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void BanMultiple(int32 CellIndex, TArray<int32> TileIds);
+	bool BanMultiple(int32 CellIndex, TArray<int32> TileIds);
 
 	/**
 	 * Select a tile to use for a cell.
@@ -153,6 +194,12 @@ public:
 	/** Return the selected tiles for every cell in the grid */
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	void GetSelectedTileIds(TArray<int32>& OutTileIds) const;
+
+	/** Create an return a snapshot of this generator. */
+	UWFCGeneratorSnapshot* CreateSnapshot(UObject* Outer) const;
+
+	/** Update the state of this generator to a previous snapshot. */
+	void ApplySnapshot(const UWFCGeneratorSnapshot* Snapshot);
 
 	const TArray<FWFCCellIndex>& GetCellsAffectedThisUpdate() const { return CellsAffectedThisUpdate; }
 
@@ -203,8 +250,9 @@ protected:
 	/** Create and initialize the grid. */
 	virtual void InitializeGrid(const UWFCGridConfig* GridConfig);
 
-	/** Create and initialize constraint objects. */
-	virtual void InitializeConstraints();
+	virtual void CreateConstraints();
+
+	virtual void CreateCellSelectors();
 
 	/** Create and initialize cell selector objects. */
 	virtual void InitializeCellSelectors();
@@ -219,7 +267,7 @@ protected:
 
 	/** Called when tile candidates have been banned from a cell. */
 	virtual void OnCellCandidatesBanned(FWFCCellIndex CellIndex, const TArray<FWFCTileId>& BannedTileIds);
-	
+
 	/** Called when the candidates for a cell have changed. */
 	virtual void OnCellChanged(FWFCCellIndex CellIndex);
 

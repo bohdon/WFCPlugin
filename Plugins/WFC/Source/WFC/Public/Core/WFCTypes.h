@@ -41,20 +41,49 @@ enum class EWFCGeneratorStepPhase : uint8
 
 
 /**
+ * The granularity to use when stepping the generator forward.
+ * Determines when to break after certain work is done.
+ */
+UENUM(BlueprintType)
+enum class EWFCGeneratorStepGranularity : uint8
+{
+	/** Perform a full iteration of applying constraints and selecting a tile. */
+	None,
+	/** Stop after constraints, before selection, if constraints made any changes. */
+	Constraints,
+	/** Break after any constraint if a cell was collapsed during its work. */
+	ConstraintCollapse,
+	/** Break after each constraint if they did any work. */
+	EachConstraint,
+	/** Break at detailed levels of work within each constraint. */
+	ConstraintDetailed,
+	/** Break at very detailed levels of work within each constraint. */
+	ConstraintVeryDetailed,
+	/** Break as soon as possible. */
+	Maximum,
+};
+
+
+/**
  * Stores the state of a single cell within a grid during WFC generation.
  * Most importantly it keeps track of all tile candidates still available for a cell.
  */
+USTRUCT()
 struct FWFCCell
 {
+	GENERATED_BODY()
+
 	FWFCCell()
 		: CollapsePhase(EWFCGeneratorStepPhase::Selection)
 	{
 	}
 
 	/** The array of tile candidates for this cell. */
-	TArray<FWFCTileId> TileCandidates;
+	UPROPERTY()
+	TArray<int32> TileCandidates;
 
 	/** The phase during which this cell was fully collapsed. */
+	UPROPERTY()
 	EWFCGeneratorStepPhase CollapsePhase;
 
 	FORCEINLINE bool HasNoCandidates() const { return TileCandidates.Num() == 0; }
@@ -144,6 +173,12 @@ struct FWFCCellIndexAndTileId
 	friend uint32 GetTypeHash(const FWFCCellIndexAndTileId& IndexAndDirection)
 	{
 		return HashCombine(GetTypeHash(IndexAndDirection.CellIndex), GetTypeHash(IndexAndDirection.TileId));
+	}
+
+	friend FArchive& operator<<(FArchive& Ar, FWFCCellIndexAndTileId& InCellIndexAndTileId)
+	{
+		Ar << InCellIndexAndTileId.CellIndex << InCellIndexAndTileId.TileId;
+		return Ar;
 	}
 };
 
