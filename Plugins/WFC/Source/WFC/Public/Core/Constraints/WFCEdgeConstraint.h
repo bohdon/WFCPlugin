@@ -13,6 +13,7 @@ class UWFCAssetModel;
 
 /**
  * Constrains tiles such that only those with matching edge tags can be placed next to each other.
+ * TODO: rename to something with 'Tag' in it for clarity.
  */
 UCLASS(DisplayName = "Adjacency Constraint")
 class WFC_API UWFCEdgeConstraint : public UWFCArcConsistencyConstraint
