@@ -81,11 +81,11 @@ public:
 	EWFCGeneratorState State;
 
 	void SetState(EWFCGeneratorState NewState);
-	
+
 	/** The granularity of work that should be performed when calling Next() */
 	UPROPERTY(BlueprintReadWrite)
 	EWFCGeneratorStepGranularity StepGranularity;
-	
+
 	/** Return the total number of cells */
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumCells() const { return NumCells; }
@@ -94,7 +94,13 @@ public:
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetNumTiles() const { return NumTiles; }
 
-	FORCEINLINE const UWFCModel* GetModel() const { return Config.Model.Get(); }
+	/** Return the model object, containing all expanded tiles. */
+	UFUNCTION(BlueprintPure)
+	const UWFCModel* GetModel() const { return Config.Model.Get(); }
+
+	/** Return the grid config of the source asset. */
+	UFUNCTION(BlueprintPure)
+	const UWFCGridConfig* GetGridConfig() const { return Config.GridConfig.Get(); }
 
 	template <class T>
 	const T* GetModel() const
