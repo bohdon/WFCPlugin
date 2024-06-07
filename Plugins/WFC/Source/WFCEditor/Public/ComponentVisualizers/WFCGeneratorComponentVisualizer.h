@@ -24,9 +24,9 @@ struct HWFCCellProxy : public HWFCGeneratorVisProxy
 {
 	DECLARE_HIT_PROXY();
 
-	HWFCCellProxy(const UActorComponent* InComponent, int32 CellIndex)
+	HWFCCellProxy(const UActorComponent* InComponent, const int32 InCellIndex)
 		: HWFCGeneratorVisProxy(InComponent)
-		  , CellIndex(CellIndex)
+		  , CellIndex(InCellIndex)
 	{
 	}
 
@@ -42,7 +42,7 @@ class WFCEDITOR_API FWFCGeneratorComponentVisualizer : public FComponentVisualiz
 public:
 	FWFCGeneratorComponentVisualizer();
 
-	~FWFCGeneratorComponentVisualizer();
+	virtual ~FWFCGeneratorComponentVisualizer() override;
 
 	/** FComponentVisualizer */
 	virtual void OnRegister() override;

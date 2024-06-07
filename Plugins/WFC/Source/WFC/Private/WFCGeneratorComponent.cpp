@@ -8,6 +8,7 @@
 #include "WFCStatics.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
+#include "GameFramework/Actor.h"
 
 
 UWFCGeneratorComponent::UWFCGeneratorComponent()

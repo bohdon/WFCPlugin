@@ -8,6 +8,7 @@
 #include "WFCTileAsset.h"
 #include "WFCTileSet.h"
 #include "WFCTileSetConfig.h"
+#include "Stats/StatsMisc.h"
 
 
 const UWFCAsset* UWFCAssetModel::GetWFCAsset() const

@@ -3,6 +3,7 @@
 
 #include "WFCTileDebugComponent.h"
 
+#include "TimerManager.h"
 #include "WFCAsset.h"
 #include "WFCAssetModel.h"
 #include "WFCGeneratorComponent.h"

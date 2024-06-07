@@ -94,8 +94,8 @@ FDebugRenderSceneProxy* UWFCRenderingComponent::CreateDebugSceneProxy()
 		const UWFCEntropyCellSelector* EntropySelector = Generator->GetCellSelector<UWFCEntropyCellSelector>();
 		const UWFCEdgeConstraint* AdjacencyConstraint = Generator->GetConstraint<UWFCEdgeConstraint>();
 
-		const FLinearColor OpenColor = FLinearColor(0.5f, 0.1f, 1.f);
-		const FLinearColor CollapsedColor = FLinearColor(0.7f, 1.f, 0.7f);
+		constexpr FLinearColor OpenColor = FLinearColor(0.5f, 0.1f, 1.f);
+		constexpr FLinearColor CollapsedColor = FLinearColor(0.7f, 1.f, 0.7f);
 
 		if (AdjacencyConstraint)
 		{

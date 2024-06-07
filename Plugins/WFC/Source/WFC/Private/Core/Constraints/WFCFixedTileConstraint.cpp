@@ -7,6 +7,7 @@
 #include "WFCAssetModel.h"
 #include "Core/WFCGenerator.h"
 #include "Core/Grids/WFCGrid3D.h"
+#include "Stats/StatsMisc.h"
 
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Fixed Tile Constraint - Mappings"), STAT_WFCFixedTileConstraintMappings, STATGROUP_WFC);
 

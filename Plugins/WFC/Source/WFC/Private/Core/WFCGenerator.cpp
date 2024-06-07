@@ -8,6 +8,7 @@
 #include "Core/WFCConstraint.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
+#include "Stats/StatsMisc.h"
 
 DECLARE_CYCLE_STAT(TEXT("WFCGenerator Next"), STAT_WFCGeneratorNext, STATGROUP_WFC);
 DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Cells"), STAT_WFCGeneratorNumCells, STATGROUP_WFC);
@@ -19,7 +20,14 @@ DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Num Cells Selected"), STAT_WFCGeneratorNumC
 // -------------
 
 UWFCGenerator::UWFCGenerator()
-	: State(EWFCGeneratorState::None)
+	: State(EWFCGeneratorState::None),
+	  StepGranularity(EWFCGeneratorStepGranularity::None),
+	  NumTiles(0),
+	  NumCells(0),
+	  bIsInitialized(false),
+	  bDidSelectCellThisStep(false),
+	  NumBansThisUpdate(0),
+	  CurrentStepPhase(EWFCGeneratorStepPhase::None)
 {
 }
 

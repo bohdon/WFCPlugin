@@ -2,6 +2,7 @@
 
 #include "WFCEditor.h"
 
+#include "ShowFlags.h"
 #include "UnrealEdGlobals.h"
 #include "WFCGeneratorComponent.h"
 #include "ComponentVisualizers/WFCGeneratorComponentVisualizer.h"

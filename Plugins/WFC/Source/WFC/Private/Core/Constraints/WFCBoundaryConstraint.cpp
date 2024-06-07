@@ -7,6 +7,7 @@
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
 #include "Core/WFCModel.h"
+#include "Stats/StatsMisc.h"
 
 
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Boundary Constraint - Mappings"), STAT_WFCBoundaryConstraintMappings, STATGROUP_WFC);

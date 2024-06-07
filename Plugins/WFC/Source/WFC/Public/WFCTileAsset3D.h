@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "WFCTileAsset.h"
+#include "GameFramework/Actor.h"
 #include "WFCTileAsset3D.generated.h"
 
 

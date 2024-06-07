@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/IConsoleManager.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "WFCStatics.generated.h"
 

@@ -7,6 +7,7 @@
 #include "WFCModule.h"
 #include "Core/WFCGenerator.h"
 #include "Core/WFCGrid.h"
+#include "Stats/StatsMisc.h"
 
 
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("Edge Constraint - Time (ms)"), STAT_WFCEdgeConstraintTime, STATGROUP_WFC);

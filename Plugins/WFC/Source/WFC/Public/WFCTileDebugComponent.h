@@ -49,10 +49,10 @@ public:
 	UWFCTileDebugComponent();
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-	AActor* GeneratorActor;
+	TObjectPtr<AActor> GeneratorActor = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Setter, Meta = (ClampMin="0"))
-	int32 TileId;
+	int32 TileId = INDEX_NONE;
 
 	UFUNCTION(BlueprintSetter)
 	void SetTileId(int32 NewTileId);

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "WFCTypes.h"
+#include "Templates/SubclassOf.h"
 #include "UObject/Object.h"
 #include "WFCGenerator.generated.h"
 

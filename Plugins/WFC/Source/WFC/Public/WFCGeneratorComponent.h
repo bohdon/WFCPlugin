@@ -171,7 +171,7 @@ public:
 protected:
 	/** The generator instance */
 	UPROPERTY(Transient, BlueprintReadOnly)
-	UWFCGenerator* Generator;
+	TObjectPtr<UWFCGenerator> Generator = nullptr;
 
 	void OnCellSelected(int32 CellIndex);
 	void OnStateChanged(EWFCGeneratorState State);

@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FWFCEditorModule : public IModuleInterface
+class FWFCEditorModule final : public IModuleInterface
 {
 public:
 	virtual void StartupModule() override;

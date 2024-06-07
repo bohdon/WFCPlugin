@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "LevelInstance/LevelInstanceActorImpl.h"
 #include "LevelInstance/LevelInstanceInterface.h"

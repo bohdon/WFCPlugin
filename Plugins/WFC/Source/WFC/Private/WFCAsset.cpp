@@ -10,6 +10,7 @@
 #include "Core/WFCGenerator.h"
 #include "Misc/DataValidation.h"
 #include "UObject/ObjectSaveContext.h"
+#include "UObject/Package.h"
 
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
