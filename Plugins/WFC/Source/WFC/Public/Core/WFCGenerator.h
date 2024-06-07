@@ -185,9 +185,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure = false)
 	int32 GetNumCellCandidates(int32 CellIndex) const;
 
-	FORCEINLINE TArray<UWFCConstraint*>& GetConstraints() { return Constraints; }
+	FORCEINLINE TArray<TObjectPtr<UWFCConstraint>>& GetConstraints() { return Constraints; }
 
-	FORCEINLINE const TArray<UWFCConstraint*>& GetConstraints() const { return Constraints; }
+	FORCEINLINE const TArray<TObjectPtr<UWFCConstraint>>& GetConstraints() const { return Constraints; }
 
 	FString GetTileDebugString(int32 TileId) const;
 

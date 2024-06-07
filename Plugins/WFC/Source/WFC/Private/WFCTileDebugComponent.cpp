@@ -269,13 +269,13 @@ FBoxSphereBounds UWFCTileDebugComponent::CalcBounds(const FTransform& LocalToWor
 		return Super::CalcBounds(LocalToWorld);
 	}
 
-	TArray<FVector> Locations;
+	FBox BoundingBox(ForceInitToZero);
 	for (const FWFCTileDebugInstance& TileInstance : TileInstances)
 	{
-		Locations.Add(TileInstance.Location);
+		BoundingBox += TileInstance.Location;
 	}
 
-	const FBoxSphereBounds NewBounds(Locations);
+	const FBoxSphereBounds NewBounds(BoundingBox);
 	return NewBounds;
 }
 
