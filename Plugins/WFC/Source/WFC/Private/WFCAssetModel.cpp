@@ -127,7 +127,7 @@ void UWFCAssetModel::GenerateTiles()
 
 	for (const UWFCTileAsset* TileAsset : TileAssets)
 	{
-		const float Weight = TagWeights->GetTileWeight(TileAsset);
+		const float Weight = TagWeights ? TagWeights->GetTileWeight(TileAsset) : 1.f;
 
 		int32 NumTilesGenerated = 0;
 		TArray<int32> AllowedRotations;
