@@ -3,6 +3,9 @@
 An Unreal plugin for procedural generation using [Wave Function Collapse](https://github.com/mxgmn/WaveFunctionCollapse)
 algorithms.
 
+> Note: This plugin currently conflicts with the built-in `WaveFunctionCollapse` plugin, which uses a ShortName of
+`WFC`. Disable that plugin or change this plugin's module name if both are needed.
+
 ## Features
 
 - Game and level generation oriented features.
