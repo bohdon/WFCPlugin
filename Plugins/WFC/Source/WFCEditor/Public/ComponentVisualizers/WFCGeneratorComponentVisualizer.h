@@ -47,5 +47,5 @@ public:
 	/** FComponentVisualizer */
 	virtual void OnRegister() override;
 	virtual void DrawVisualization(const UActorComponent* Component, const FSceneView* View, FPrimitiveDrawInterface* PDI) override;
-	virtual bool ShowWhenSelected() override { return false; }
+	virtual bool ShouldShowForSelectedSubcomponents(const UActorComponent* Component) override { return false; }
 };
