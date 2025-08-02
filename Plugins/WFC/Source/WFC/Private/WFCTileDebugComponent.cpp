@@ -197,6 +197,8 @@ void UWFCTileDebugComponent::SpawnTileActors()
 		const FWFCModelAssetTile* AssetTile = AssetModel->GetTile<FWFCModelAssetTile>(TileInstance.TileId);
 		SpawnTileActor(AssetTile, TileInstance.Location);
 	}
+
+	MarkRenderStateDirty();
 }
 
 void UWFCTileDebugComponent::ClearTileActors()
