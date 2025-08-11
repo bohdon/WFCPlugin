@@ -23,7 +23,7 @@ https://github.com/bohdon/WFCPlugin/assets/338928/0d3f8f9d-149a-4524-adda-46e544
         - _What tiles can be adjacent to each other?_
         - _How many times can a tile be used?_
     - One or more `UWFCCellSelector` objects that handle picking which cell to collapse next.
-        - The most common method is based on entropy -- basically the cells that have the last amount of
+        - The most common method is based on entropy -- basically the cells that have the least amount of
           possible solutions are collapsed first, since they're likely to cause conflicts if put off until later.
 - With those pieces in place, the generator can be run until all cells have selected a tile.
 - During each update...
